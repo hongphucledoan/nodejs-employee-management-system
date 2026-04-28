@@ -57,7 +57,7 @@ app.post("/api/auth/login", async (req, res) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
-      return res.status(400).json({ error: "Username and password required" });
+      return res.status(400).json({ error: "Yêu cầu nhập đầy đủ trường dữ liệu" });
     }
 
     // Find user
@@ -66,14 +66,14 @@ app.post("/api/auth/login", async (req, res) => {
     });
 
     if (!user) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(401).json({ error: "Sai tài khoản hoặc mật khẩu" });
     }
 
     // Check password
     const passwordMatch = await bcrypt.compare(password, user.password);
 
     if (!passwordMatch) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(401).json({ error: "Sai tài khoản hoặc mật khẩu" });
     }
 
     // Generate session token
@@ -81,14 +81,14 @@ app.post("/api/auth/login", async (req, res) => {
     sessions[token] = user.id;
 
     res.json({ 
-      message: "Login successful", 
+      message: "Đăng nhập thành công", 
       token,
       userId: user.id,
       username: user.username
     });
   } catch (error) {
     console.error("❌ Login error:", error);
-    res.status(500).json({ error: "Failed to login" });
+    res.status(500).json({ error: "Đăng nhập thất bại" });
   }
 });
 
@@ -99,9 +99,9 @@ app.post("/api/auth/logout", (req, res) => {
     if (token && sessions[token]) {
       delete sessions[token];
     }
-    res.json({ message: "Logout successful" });
+    res.json({ message: "Đăng xuất thành công" });
   } catch (error) {
-    res.status(500).json({ error: "Failed to logout" });
+    res.status(500).json({ error: "Đăng xuất thất bại" });
   }
 });
 
