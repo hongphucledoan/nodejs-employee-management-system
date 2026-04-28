@@ -119,7 +119,7 @@ export default function App() {
           <div className="flex items-center gap-3">
             {/* Avatar */}
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:opacity-80 transition">
-              AD
+              {location.pathname.includes("login") ? "?" : "AD"}
             </div>
           </div>
         </header>
