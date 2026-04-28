@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { useAuth } from "./hooks/useAuth";
+import Login from "./components/Login";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./components/Dashboard";
 import EmployeeList from "./components/EmployeeList";
@@ -7,7 +9,7 @@ import TaskBoard from "./components/TaskBoard";
 import Attendance from "./components/Attendance";
 import Salary from "./components/Salary";
 import Reports from "./components/Reports";
-import { Bell, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 
 const tabTitles: Record<string, string> = {
   dashboard: "Tổng quan",
@@ -18,15 +20,61 @@ const tabTitles: Record<string, string> = {
   reports: "Báo cáo",
 };
 
+// Protected Route Component
+function ProtectedRoute({ element }: { element: React.ReactNode }) {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-slate-600">Đang kiểm tra đăng nhập...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return element;
+}
+
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const { isAuthenticated, loading, login } = useAuth();
 
   const getPageTitle = () => {
     const path = location.pathname.replace("/", "") || "dashboard";
     return tabTitles[path] || "Tổng quan";
   };
 
+  // Show loading screen while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-slate-600">Đang tải...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login page if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <Routes>
+        <Route path="/login" element={<Login onLogin={login} />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
+
+  // Show main app if authenticated
   return (
     <div className="min-h-screen bg-slate-50 font-[Inter,sans-serif]">
       {/* Sidebar */}
@@ -41,7 +89,11 @@ export default function App() {
       )}
 
       {/* Mobile sidebar */}
-      <div className={`fixed left-0 top-0 h-screen w-64 z-50 lg:hidden transition-transform duration-300 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <div
+        className={`fixed left-0 top-0 h-screen w-64 z-50 lg:hidden transition-transform duration-300 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
         <Sidebar onNavigate={() => setSidebarOpen(false)} />
       </div>
 
@@ -65,21 +117,9 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Notification bell */}
-            <button className="relative p-2 rounded-xl text-slate-500 hover:bg-slate-100 transition">
-              <Bell size={18} />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
-
-            {/* Tech badge */}
-            <div className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 px-3 py-1.5 rounded-xl">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-green-700 text-xs font-semibold">Node.js v20 LTS</span>
-            </div>
-
             {/* Avatar */}
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:opacity-80 transition">
-              AD
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:opacity-80 transition">
+              {location.pathname.includes("login") ? "?" : "AD"}
             </div>
           </div>
         </header>
@@ -87,20 +127,25 @@ export default function App() {
         {/* Page content */}
         <main className="flex-1 p-4 sm:p-6">
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/employees" element={<EmployeeList />} />
-            <Route path="/tasks" element={<TaskBoard />} />
-            <Route path="/attendance" element={<Attendance />} />
-            <Route path="/salary" element={<Salary />} />
-            <Route path="/reports" element={<Reports />} />
+            <Route path="/" element={<ProtectedRoute element={<Dashboard />} />} />
+            <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
+            <Route path="/employees" element={<ProtectedRoute element={<EmployeeList />} />} />
+            <Route path="/tasks" element={<ProtectedRoute element={<TaskBoard />} />} />
+            <Route path="/attendance" element={<ProtectedRoute element={<Attendance />} />} />
+            <Route path="/salary" element={<ProtectedRoute element={<Salary />} />} />
+            <Route path="/reports" element={<ProtectedRoute element={<Reports />} />} />
+            <Route path="/login" element={<Login onLogin={login} />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>
 
         {/* Footer */}
         <footer className="px-6 py-4 border-t border-slate-100 bg-white">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
-            <p>© 2025 NodeJS Corp — Hệ thống quản lý nhân viên. Đồ án môn Các Công Nghệ Lập Trình Hiện Đại.</p>
+            <p>
+              © 2025 NodeJS Corp — Hệ thống quản lý nhân viên. Đồ án môn Các
+              Công Nghệ Lập Trình Hiện Đại.
+            </p>
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block"></span>

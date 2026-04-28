@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
+import bcrypt from "bcryptjs";
 
 dotenv.config();
 
@@ -19,25 +20,44 @@ async function main() {
   try {
     // Clear existing data (without transactions)
     console.log("🗑️  Clearing existing data...");
-    // Use deleteMany without transaction - will work on standalone MongoDB
+    // Clear users too
     try {
       await prisma.salaryRecord.deleteMany({});
       await prisma.attendance.deleteMany({});
       await prisma.task.deleteMany({});
       await prisma.employee.deleteMany({});
+      await prisma.user.deleteMany({});
     } catch (error: any) {
       // If deleteMany fails due to replica set requirement, try alternative approach
       if (error.code === 'P2031') {
         console.warn('⚠️  MongoDB replica set not configured, using single document deletes...');
+        const userCount = await prisma.user.count();
+        if (userCount > 0) {
+          const users = await prisma.user.findMany({ select: { id: true } });
+          for (const user of users) {
+            await prisma.user.delete({ where: { id: user.id } });
+          }
+        }
         const empCount = await prisma.employee.count();
         if (empCount > 0) {
-          const employees = await prisma.employee.findMany({ select: { id: true } });
-          for (const emp of employees) {
+          const allEmployees = await prisma.employee.findMany({ select: { id: true } });
+          for (const emp of allEmployees) {
             await prisma.employee.delete({ where: { id: emp.id } });
           }
         }
       }
     }
+
+    // Seed Users (Demo authentication)
+    console.log("👤 Seeding demo users...");
+    const hashedPassword = await bcrypt.hash("123456", 10);
+    await prisma.user.create({
+      data: {
+        username: "admin",
+        password: hashedPassword,
+      },
+    });
+    console.log(`✅ Created demo user: admin (password: 123456)`);
 
     // Seed Employees
     console.log("👥 Seeding employees...");

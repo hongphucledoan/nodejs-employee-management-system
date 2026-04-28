@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -11,6 +11,7 @@ import {
   Server,
   ChevronRight,
 } from "lucide-react";
+import { useAuth } from "../hooks/useAuth";
 
 interface SidebarProps {
   onNavigate?: () => void;
@@ -27,6 +28,14 @@ const navItems = [
 
 export default function Sidebar({ onNavigate }: SidebarProps) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout, username } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
+
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 shadow-2xl z-50">
       {/* Logo */}
@@ -73,18 +82,21 @@ export default function Sidebar({ onNavigate }: SidebarProps) {
           <Settings size={18} className="text-slate-500" />
           Cài đặt
         </button>
-        <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-all duration-200">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-all duration-200"
+        >
           <LogOut size={18} className="text-slate-500" />
           Đăng xuất
         </button>
         {/* User */}
         <div className="flex items-center gap-3 px-3 py-3 mt-2 bg-slate-800/50 rounded-xl">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-white text-xs font-bold">
-            AD
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-xs font-bold">
+            {username ? username.charAt(0).toUpperCase() : "U"}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-white text-xs font-semibold truncate">Admin System</p>
-            <p className="text-slate-500 text-xs truncate">admin@nodejscorp.vn</p>
+            <p className="text-white text-xs font-semibold truncate">{username || "User"}</p>
+            <p className="text-slate-500 text-xs truncate">Đã đăng nhập</p>
           </div>
         </div>
       </div>

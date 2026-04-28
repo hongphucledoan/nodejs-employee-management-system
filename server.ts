@@ -1,7 +1,8 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import cors from "cors";
 import { PrismaClient } from "@prisma/client";
 import dotenv from "dotenv";
+import bcrypt from "bcryptjs";
 
 dotenv.config();
 
@@ -12,6 +13,124 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Session storeAUTH ROUTES ============
+// Register user
+app.post("/api/auth/register", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ error: "Username and password required" });
+    }
+
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { username },
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ error: "Username already exists" });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user
+    const user = await prisma.user.create({
+      data: {
+        username,
+        password: hashedPassword,
+      },
+    });
+
+    res.json({ message: "User created successfully", userId: user.id });
+  } catch (error) {
+    console.error("❌ Registration error:", error);
+    res.status(500).json({ error: "Failed to register user" });
+  }
+});
+
+// Login user
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ error: "Username and password required" });
+    }
+
+    // Find user
+    const user = await prisma.user.findUnique({
+      where: { username },
+    });
+
+    if (!user) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    // Check password
+    const passwordMatch = await bcrypt.compare(password, user.password);
+
+    if (!passwordMatch) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    // Generate session token
+    const token = generateSessionToken();
+    sessions[token] = user.id;
+
+    res.json({ 
+      message: "Login successful", 
+      token,
+      userId: user.id,
+      username: user.username
+    });
+  } catch (error) {
+    console.error("❌ Login error:", error);
+    res.status(500).json({ error: "Failed to login" });
+  }
+});
+
+// Logout user
+app.post("/api/auth/logout", (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (token && sessions[token]) {
+      delete sessions[token];
+    }
+    res.json({ message: "Logout successful" });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to logout" });
+  }
+});
+
+// Verify token
+app.get("/api/auth/verify", (req, res) => {
+  const userId = checkAuth(req, res);
+  if (userId) {
+    res.json({ authenticated: true, userId });
+  } else {
+    res.status(401).json({ authenticated: false });
+  }
+});
+
+// ============  (simple in-memory solution)
+const sessions: { [key: string]: string } = {};
+
+// Helper function to generate session token
+function generateSessionToken(): string {
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
+
+// Auth middleware to check if user is logged in
+function checkAuth(req: Request, res: Response): string | null {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  if (!token || !sessions[token]) {
+    return null;
+  }
+  return sessions[token];
+}
 
 // ============ EMPLOYEE ROUTES ============
 // Get all employees
