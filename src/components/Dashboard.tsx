@@ -23,6 +23,7 @@ import {
 } from "recharts";
 import { useEmployees, useTasks, useAttendances, useSalaries } from "../hooks/useAPI";
 import { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 
 
 //Cấu hình cách trình bày cho thẻ thống kê
@@ -261,7 +262,9 @@ export default function Dashboard() {
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-slate-800">Công việc gần đây</h3>
-            <span className="text-xs text-indigo-600 font-medium cursor-pointer hover:underline">Xem tất cả</span>
+            <Link to="/tasks" className="text-xs text-indigo-600 font-medium cursor-pointer hover:underline">
+              Xem tất cả
+            </Link>
           </div>
           {isLoading ? (
             <div className="text-center py-8 text-slate-400">Đang tải...</div>
