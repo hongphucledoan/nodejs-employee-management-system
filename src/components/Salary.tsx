@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { DollarSign, TrendingUp, Download, ChevronDown, CheckCircle2, Clock, AlertCircle } from "lucide-react";
-import { salaryRecords, employees } from "../data/mockData";
+import { salaryRecords, employees } from "../data/Dataset";
 import {
   BarChart,
   Bar,

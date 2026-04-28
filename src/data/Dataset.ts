@@ -1,5 +1,6 @@
 export interface Employee {
   id: string;
+  empId: string;
   name: string;
   avatar: string;
   department: string;
@@ -47,110 +48,7 @@ export interface SalaryRecord {
 }
 
 export const employees: Employee[] = [
-  {
-    id: "EMP001",
-    name: "Nguyễn Văn An",
-    avatar: "NVA",
-    department: "Backend",
-    position: "NodeJS Developer",
-    email: "an.nguyen@nodejscorp.vn",
-    phone: "0901234567",
-    joinDate: "2022-03-15",
-    status: "active",
-    salary: 25000000,
-    level: "Senior",
-  },
-  {
-    id: "EMP002",
-    name: "Trần Thị Bích",
-    avatar: "TTB",
-    department: "Frontend",
-    position: "React Developer",
-    email: "bich.tran@nodejscorp.vn",
-    phone: "0912345678",
-    joinDate: "2023-01-10",
-    status: "active",
-    salary: 18000000,
-    level: "Mid",
-  },
-  {
-    id: "EMP003",
-    name: "Lê Minh Cường",
-    avatar: "LMC",
-    department: "DevOps",
-    position: "DevOps Engineer",
-    email: "cuong.le@nodejscorp.vn",
-    phone: "0923456789",
-    joinDate: "2021-07-20",
-    status: "active",
-    salary: 30000000,
-    level: "Lead",
-  },
-  {
-    id: "EMP004",
-    name: "Phạm Thị Dung",
-    avatar: "PTD",
-    department: "QA",
-    position: "QA Engineer",
-    email: "dung.pham@nodejscorp.vn",
-    phone: "0934567890",
-    joinDate: "2023-06-01",
-    status: "probation",
-    salary: 12000000,
-    level: "Junior",
-  },
-  {
-    id: "EMP005",
-    name: "Hoàng Văn Em",
-    avatar: "HVE",
-    department: "Backend",
-    position: "NodeJS Developer",
-    email: "em.hoang@nodejscorp.vn",
-    phone: "0945678901",
-    joinDate: "2020-11-05",
-    status: "active",
-    salary: 35000000,
-    level: "Manager",
-  },
-  {
-    id: "EMP006",
-    name: "Vũ Thị Phương",
-    avatar: "VTP",
-    department: "UI/UX",
-    position: "UI/UX Designer",
-    email: "phuong.vu@nodejscorp.vn",
-    phone: "0956789012",
-    joinDate: "2022-09-14",
-    status: "active",
-    salary: 20000000,
-    level: "Mid",
-  },
-  {
-    id: "EMP007",
-    name: "Đặng Quốc Hùng",
-    avatar: "DQH",
-    department: "Backend",
-    position: "Database Admin",
-    email: "hung.dang@nodejscorp.vn",
-    phone: "0967890123",
-    joinDate: "2021-04-22",
-    status: "inactive",
-    salary: 22000000,
-    level: "Senior",
-  },
-  {
-    id: "EMP008",
-    name: "Bùi Thị Lan",
-    avatar: "BTL",
-    department: "HR",
-    position: "HR Manager",
-    email: "lan.bui@nodejscorp.vn",
-    phone: "0978901234",
-    joinDate: "2019-08-30",
-    status: "active",
-    salary: 28000000,
-    level: "Manager",
-  },
+
 ];
 
 export const tasks: Task[] = [

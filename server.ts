@@ -172,29 +172,29 @@ app.get("/api/employees/:id", async (req, res) => {
 });
 
 // Create employee
-app.post("/api/employees", async (req, res) => {
-  try {
-    const employee = await prisma.employee.create({
-      data: req.body,
-    });
-    res.json(employee);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to create employee" });
-  }
-});
+// app.post("/api/employees", async (req, res) => {
+//   try {
+//     const employee = await prisma.employee.create({
+//       data: req.body,
+//     });
+//     res.json(employee);
+//   } catch (error) {
+//     res.status(500).json({ error: "Failed to create employee" });
+//   }
+// });
 
-// Update employee
-app.put("/api/employees/:id", async (req, res) => {
-  try {
-    const employee = await prisma.employee.update({
-      where: { id: req.params.id },
-      data: req.body,
-    });
-    res.json(employee);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to update employee" });
-  }
-});
+// // Update employee
+// app.put("/api/employees/:id", async (req, res) => {
+//   try {
+//     const employee = await prisma.employee.update({
+//       where: { id: req.params.id },
+//       data: req.body,
+//     });
+//     res.json(employee);
+//   } catch (error) {
+//     res.status(500).json({ error: "Failed to update employee" });
+//   }
+// });
 
 // Delete employee
 app.delete("/api/employees/:id", async (req, res) => {
@@ -207,6 +207,182 @@ app.delete("/api/employees/:id", async (req, res) => {
     res.status(500).json({ error: "Failed to delete employee" });
   }
 });
+
+// Create employee - with better error handling
+app.post("/api/employees", async (req, res) => {
+  try {
+    const { name, email, phone, department, position, salary, level, status } = req.body;
+
+    // 1. Validate dữ liệu cơ bản
+    if (!name || !email || !phone || !department || !position) {
+      return res.status(400).json({ 
+        error: "Thiếu thông tin bắt buộc (name, email, phone, department, position)" 
+      });
+    }
+
+    // 2. Sinh empId tự động (EMP001, EMP002, ...)
+    // Lưu ý: Tìm theo empId cuối cùng, không phải id
+    const lastEmployee = await prisma.employee.findFirst({
+      orderBy: { empId: "desc" }, // Sắp xếp theo empId để lấy mã mới nhất
+      select: { empId: true },
+    });
+
+    let nextNum = 1;
+    if (lastEmployee?.empId?.startsWith("EMP")) {
+      const numPart = lastEmployee.empId.slice(3);
+      // Kiểm tra xem phần số có valid không
+      if (!isNaN(parseInt(numPart))) {
+        nextNum = parseInt(numPart) + 1;
+      }
+    }
+    
+    // Định dạng lại thành EMP001, EMP002...
+    const newEmpId = `EMP${nextNum.toString().padStart(3, "0")}`;
+
+    // 3. Kiểm tra trùng email hoặc phone
+    const existing = await prisma.employee.findFirst({
+      where: { 
+        OR: [
+          { email: email.trim() },
+          { phone: phone.trim() }
+        ]
+      },
+    });
+
+    if (existing) {
+      return res.status(409).json({ 
+        error: existing.email === email.trim() 
+          ? "Email này đã tồn tại trong hệ thống" 
+          : "Số điện thoại này đã tồn tại trong hệ thống" 
+      });
+    }
+
+    const avatar = name.trim().charAt(0).toUpperCase();
+
+    // 4. Tạo ngày tháng chuẩn ISO (YYYY-MM-DD)
+    const today = new Date();
+    const isoDateString = today.toISOString().split('T')[0]; // Lấy phần "YYYY-MM-DD"
+
+    // 5. Tạo nhân viên mới
+    const employee = await prisma.employee.create({
+      data: {
+        empId: newEmpId,       // Gán vào trường empId, KHÔNG PHẢI id
+        name: name.trim(),
+        avatar,
+        department,
+        position: position.trim(),
+        email: email.trim().toLowerCase(),
+        phone: phone.trim(),
+        joinDate: isoDateString, // Gửi string dạng "2026-04-29"
+        status: status || "active",
+        salary: parseInt(salary) || 0,
+        level: level || "Junior",
+        // id, createdAt, updatedAt sẽ được Prisma/MongoDB tự động xử lý
+      },
+    });
+
+    console.log(`✅ Employee created: ${newEmpId} - ${name}`);
+
+    return res.status(201).json({
+      success: true,
+      message: "Thêm nhân viên thành công",
+      employee,
+    });
+
+  } catch (error: any) {
+    console.error("❌ Error creating employee:", error);
+
+    // Xử lý lỗi trùng lặp cụ thể của MongoDB/Prisma
+    if (error.code === "P2002") {
+      return res.status(409).json({ 
+        error: "Dữ liệu bị trùng (Email hoặc Mã nhân viên)" 
+      });
+    }
+
+    return res.status(500).json({ 
+      error: "Không thể thêm nhân viên. Vui lòng thử lại.",
+      details: error.message || "Unknown error"
+    });
+  }
+});
+
+// ============ UPDATE EMPLOYEE ROUTE ============
+app.put("/api/employees/:id", async (req, res) => {
+  try {
+    const { id } = req.params; // Đây là MongoDB ObjectId (_id)
+    const { name, email, phone, department, position, salary, level, status } = req.body;
+
+    // 1. Validate cơ bản
+    if (!name || !email || !phone || !department || !position) {
+      return res.status(400).json({ error: "Thiếu thông tin bắt buộc" });
+    }
+
+    // 2. Kiểm tra xem nhân viên có tồn tại không
+    const existingEmp = await prisma.employee.findUnique({
+      where: { id },
+    });
+
+    if (!existingEmp) {
+      return res.status(404).json({ error: "Không tìm thấy nhân viên" });
+    }
+
+    // 3. Kiểm tra trùng Email/Phone (nhưng phải loại trừ chính nhân viên đang sửa)
+    const duplicate = await prisma.employee.findFirst({
+      where: {
+        AND: [
+          {
+            OR: [
+              { email: email.trim() },
+              { phone: phone.trim() }
+            ]
+          },
+          { id: { not: id } } // Không tính chính nó
+        ]
+      },
+    });
+
+    if (duplicate) {
+      return res.status(409).json({
+        error: duplicate.email === email.trim()
+          ? "Email này đã được sử dụng bởi nhân viên khác"
+          : "Số điện thoại này đã được sử dụng bởi nhân viên khác"
+      });
+    }
+
+    // 4. Cập nhật dữ liệu
+    const updatedEmployee = await prisma.employee.update({
+      where: { id },
+      data: {
+        name: name.trim(),
+        avatar: name.trim().charAt(0).toUpperCase(), // Cập nhật lại avatar nếu đổi tên
+        department,
+        position: position.trim(),
+        email: email.trim().toLowerCase(),
+        phone: phone.trim(),
+        status,
+        salary: parseInt(salary) || 0,
+        level,
+        // joinDate giữ nguyên, không cho sửa qua form này để đảm bảo lịch sử
+      },
+    });
+
+    console.log(`✅ Employee updated: ${id}`);
+
+    return res.json({
+      success: true,
+      message: "Cập nhật thông tin thành công",
+      employee: updatedEmployee,
+    });
+
+  } catch (error: any) {
+    console.error("❌ Error updating employee:", error);
+    return res.status(500).json({
+      error: "Lỗi server khi cập nhật nhân viên",
+      details: error.message
+    });
+  }
+});
+
 
 // ============ TASK ROUTES ============
 // Get all tasks

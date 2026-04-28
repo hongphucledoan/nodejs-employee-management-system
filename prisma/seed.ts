@@ -12,7 +12,7 @@ import {
   tasks,
   attendanceRecords,
   salaryRecords,
-} from "../src/data/mockData";
+} from "../src/data/Dataset";
 
 async function main() {
   console.log("🌱 Starting database seed...");

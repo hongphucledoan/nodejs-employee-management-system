@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Search, Plus, Filter, Edit2, Trash2, Eye, Phone, Mail, ChevronDown } from "lucide-react";
-import { Employee } from "../data/mockData";
+import { Employee } from "../data/Dataset";
 import { useEmployees } from "../hooks/useAPI";
 
 const statusLabel: Record<string, { label: string; color: string }> = {
@@ -28,11 +28,22 @@ const avatarColors = [
   "from-lime-500 to-green-600",
 ];
 
+// Hàm tạo chỉ số màu dựa trên tên (để màu không đổi khi reload)
+const getColorIndex = (str: string) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return Math.abs(hash) % avatarColors.length;
+};
+
+// Employee Detail Modal Props
 interface ModalProps {
   employee: Employee;
   onClose: () => void;
 }
 
+// Employee Detail Modal
 function EmployeeModal({ employee, onClose }: ModalProps) {
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
@@ -40,8 +51,8 @@ function EmployeeModal({ employee, onClose }: ModalProps) {
         <div className="h-28 bg-gradient-to-r from-slate-800 to-slate-700 rounded-t-2xl relative">
           <button onClick={onClose} className="absolute top-4 right-4 text-white/70 hover:text-white text-xl font-bold">✕</button>
         </div>
-        <div className="px-6 pb-6">
-          <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${avatarColors[parseInt(employee.id.slice(-1)) % 8]} flex items-center justify-center text-white font-bold text-xl -mt-8 shadow-lg border-4 border-white`}>
+        <div className="px-6 pb-6 pt-10">
+          <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${avatarColors[getColorIndex(employee.name)]} flex items-center justify-center text-white font-bold text-xl -mt-8 shadow-lg border-4 border-white`}>
             {employee.avatar}
           </div>
           <div className="mt-3">
@@ -50,7 +61,7 @@ function EmployeeModal({ employee, onClose }: ModalProps) {
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3">
             {[
-              { label: "Mã NV", value: employee.id },
+              { label: "Mã NV", value: employee.empId },
               { label: "Phòng ban", value: employee.department },
               { label: "Cấp bậc", value: employee.level },
               { label: "Ngày vào", value: new Date(employee.joinDate).toLocaleDateString("vi-VN") },
@@ -92,12 +103,77 @@ export default function EmployeeList() {
 
   const filtered = (employees || []).filter((e: Employee) => {
     const matchSearch = e.name.toLowerCase().includes(search.toLowerCase()) ||
-      e.id.toLowerCase().includes(search.toLowerCase()) ||
+      e.empId.toLowerCase().includes(search.toLowerCase()) ||
       e.position.toLowerCase().includes(search.toLowerCase());
     const matchDept = deptFilter === "all" || e.department === deptFilter;
     const matchStatus = statusFilter === "all" || e.status === statusFilter;
     return matchSearch && matchDept && matchStatus;
   });
+
+  // Thêm state mới vào đầu component EmployeeList
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    department: "Backend",
+    position: "",
+    salary: 10000000,
+    level: "Junior",
+    status: "active",
+  });
+
+  const [adding, setAdding] = useState(false);
+  const [addError, setAddError] = useState("");
+
+  // Reset form khi mở modal
+  const openAddModal = () => {
+    setFormData({
+      name: "",
+      email: "",
+      phone: "",
+      department: "Backend",
+      position: "",
+      salary: 10000000,
+      level: "Junior",
+      status: "active",
+    });
+    setAddError("");
+    setShowAddModal(true);
+  };
+
+  // Handle submit
+  const handleAddEmployee = async () => {
+    if (!formData.name || !formData.email || !formData.phone || !formData.position) {
+      setAddError("Vui lòng điền đầy đủ thông tin bắt buộc");
+      return;
+    }
+
+    setAdding(true);
+    setAddError("");
+
+    try {
+      const response = await fetch("http://localhost:3001/api/employees", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert("Thêm nhân viên thành công!");
+        setShowAddModal(false);
+        // Refresh danh sách (nếu useEmployees dùng React Query hoặc refetch)
+        window.location.reload(); // tạm thời, sau này nên dùng refetch tốt hơn
+      } else {
+        setAddError(result.error || "Có lỗi xảy ra khi thêm nhân viên");
+      }
+    } catch (err) {
+      setAddError("Lỗi kết nối đến server. Vui lòng thử lại.");
+    } finally {
+      setAdding(false);
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -185,12 +261,12 @@ export default function EmployeeList() {
                 </tr>
               )}
               {!loading && !error && filtered.map((emp: Employee) => {
-                const colorIdx = parseInt(emp.id.slice(-1)) % 8;
+                // const colorIdx = parseInt(emp.id.slice(-1)) % 8;
                 return (
                   <tr key={emp.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${avatarColors[colorIdx]} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${avatarColors[getColorIndex(emp.name)]} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
                           {emp.avatar}
                         </div>
                         <div>
@@ -263,7 +339,7 @@ export default function EmployeeList() {
 
       {selectedEmp && <EmployeeModal employee={selectedEmp} onClose={() => setSelectedEmp(null)} />}
       
-      {/* Add Employee */}
+      {/* Add Employee Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowAddModal(false)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6" onClick={(e) => e.stopPropagation()}>
@@ -271,28 +347,125 @@ export default function EmployeeList() {
               <h3 className="text-lg font-bold text-slate-800">Thêm nhân viên mới</h3>
               <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-700 text-xl font-bold">✕</button>
             </div>
+
             <div className="grid grid-cols-2 gap-4">
-              {[
-                { label: "Họ và tên", placeholder: "Nguyễn Văn A" },
-                { label: "Email", placeholder: "email@nodejscorp.vn" },
-                { label: "Số điện thoại", placeholder: "09xxxxxxxx" },
-                { label: "Phòng ban", placeholder: "Backend" },
-                { label: "Chức vụ", placeholder: "NodeJS Developer" },
-                { label: "Lương cơ bản", placeholder: "15,000,000" },
-              ].map((field) => (
-                <div key={field.label}>
-                  <label className="block text-xs font-medium text-slate-600 mb-1.5">{field.label}</label>
-                  <input
-                    type="text"
-                    placeholder={field.placeholder}
-                    className="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-300"
-                  />
-                </div>
-              ))}
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1.5">Họ và tên *</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                  placeholder="Nguyễn Văn A"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1.5">Email *</label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                  placeholder="email@nodejscorp.vn"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1.5">Số điện thoại *</label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  maxLength={11}
+                  className="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                  placeholder="09xxxxxxxxx"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1.5">Phòng ban</label>
+                <select
+                  value={formData.department}
+                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                  className="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                >
+                  {["Frontend", "Backend", "DevOps", "QA", "UI/UX", "HR"].map((dept) => (
+                    <option key={dept} value={dept}>{dept}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1.5">Chức vụ *</label>
+                <input
+                  type="text"
+                  value={formData.position}
+                  onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                  className="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                  placeholder="NodeJS Developer"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1.5">Cấp bậc</label>
+                <select
+                  value={formData.level}
+                  onChange={(e) => setFormData({ ...formData, level: e.target.value })}
+                  className="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                >
+                  <option value="Junior">Junior</option>
+                  <option value="Mid">Mid</option>
+                  <option value="Senior">Senior</option>
+                  <option value="Lead">Lead</option>
+                  <option value="Manager">Manager</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1.5">Lương cơ bản (VNĐ)</label>
+                <input
+                  type="number"
+                  value={formData.salary}
+                  onChange={(e) => setFormData({ ...formData, salary: parseInt(e.target.value) || 5000000 })}
+                  min={5000000}
+                  max={30000000}
+                  step={500000}
+                  className="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1.5">Trạng thái</label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  className="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                >
+                  <option value="active">Đang làm việc</option>
+                  <option value="probation">Thử việc</option>
+                  <option value="inactive">Nghỉ việc</option>
+                </select>
+              </div>
             </div>
+
+            {addError && <p className="text-red-500 text-sm mt-3">{addError}</p>}
+
             <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowAddModal(false)} className="flex-1 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition">Hủy</button>
-              <button onClick={() => setShowAddModal(false)} className="flex-1 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl hover:opacity-90 transition">Thêm nhân viên</button>
+              <button 
+                onClick={() => setShowAddModal(false)} 
+                className="flex-1 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition"
+                disabled={adding}
+              >
+                Hủy
+              </button>
+              <button 
+                onClick={handleAddEmployee} 
+                disabled={adding}
+                className="flex-1 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl hover:opacity-90 transition disabled:opacity-70"
+              >
+                {adding ? "Đang thêm..." : "Thêm nhân viên"}
+              </button>
             </div>
           </div>
         </div>

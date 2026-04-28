@@ -105,7 +105,7 @@ PUT    /api/salaries/:id               # Cập nhật bảng lương
 
 📝 TIẾP THEO - CÁCH DÙNG API TRONG COMPONENT:
 
-Thay vì dùng mockData, giờ dùng hooks:
+Thay vì dùng Dataset, giờ dùng hooks:
 
 ```typescript
 import { useEmployees } from '../hooks/useAPI';

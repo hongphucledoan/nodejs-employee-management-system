@@ -22,7 +22,7 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
 } from "recharts";
-import { employees, tasks, departmentStats } from "../data/mockData";
+import { employees, tasks, departmentStats } from "../data/Dataset";
 
 const performanceData = [
   { subject: "Hoàn thành task", A: 85, fullMark: 100 },
