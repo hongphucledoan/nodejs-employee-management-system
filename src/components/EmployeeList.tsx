@@ -94,7 +94,7 @@ export default function EmployeeList() {
   const [search, setSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  
+
   // State cho View Detail
   const [selectedEmp, setSelectedEmp] = useState<Employee | null>(null);
 
@@ -121,8 +121,8 @@ export default function EmployeeList() {
 
   // ... (Giữ nguyên các logic filter departments, filtered list ở dưới) ...
   const departments = ["all", ...Array.from(new Set((employees || []).map((e: Employee) => e.department)))];
+  // Code filtering dữ liệu dựa trên search, deptFilter, statusFilter
   const filtered = (employees || []).filter((e: Employee) => {
-     // ... (giữ nguyên logic filter) ...
     const matchSearch = e.name.toLowerCase().includes(search.toLowerCase()) ||
       e.id.toLowerCase().includes(search.toLowerCase()) ||
       e.position.toLowerCase().includes(search.toLowerCase());
@@ -130,6 +130,30 @@ export default function EmployeeList() {
     const matchStatus = statusFilter === "all" || e.status === statusFilter;
     return matchSearch && matchDept && matchStatus;
   });
+
+    // --- THÊM STATE PAGINATION ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6; // Số lượng nhân viên mỗi trang
+
+  // --- LOGIC PAGINATION ---
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  
+  // Đảm bảo currentPage không vượt quá tổng số trang (ví dụ khi xóa dữ liệu)
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(totalPages);
+  }
+
+  // Cắt mảng dữ liệu để lấy đúng 6 item cho trang hiện tại
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedData = filtered.slice(startIndex, endIndex);
+  
+  // Hàm chuyển trang
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
 
   // --- HANDLERS ---
 
@@ -239,19 +263,25 @@ export default function EmployeeList() {
       <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />  
             <input
               type="text"
               placeholder="Tìm kiếm tên, mã NV, chức vụ..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1); // Reset về trang 1 khi thay đổi search
+              }}
               className="w-full pl-9 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 transition"
             />
           </div>
           <div className="relative">
             <select
               value={deptFilter}
-              onChange={(e) => setDeptFilter(e.target.value)}
+              onChange={(e) => {
+                setDeptFilter(e.target.value);
+                setCurrentPage(1); // Reset về trang 1 khi thay đổi filter
+              }}
               className="appearance-none pl-3 pr-8 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-300 cursor-pointer"
             >
               {departments.map((d) => (
@@ -263,7 +293,10 @@ export default function EmployeeList() {
           <div className="relative">
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => {
+                setStatusFilter(e.target.value);
+                setCurrentPage(1); // Reset về trang 1 khi thay đổi filter
+              }}
               className="appearance-none pl-3 pr-8 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-300 cursor-pointer"
             >
               <option value="all">Tất cả trạng thái</option>
@@ -291,19 +324,30 @@ export default function EmployeeList() {
                 <th className="text-center text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3.5">Hành động</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+                        <tbody className="divide-y divide-slate-50">
               {loading && (
                 <tr><td colSpan={7} className="text-center py-12 text-slate-400">Đang tải dữ liệu...</td></tr>
               )}
               {error && (
                 <tr><td colSpan={7} className="text-center py-12 text-red-500">Lỗi: {error}</td></tr>
               )}
-              {!loading && !error && filtered.map((emp: Employee) => {
+              
+              {/* SỬA: Dùng paginatedData thay vì filtered */}
+              {!loading && !error && paginatedData.map((emp: Employee) => {
+                 // ... giữ nguyên logic màu avatar và render row ...
+                 const getColorIndex = (str: string) => {
+                  let hash = 0;
+                  for (let i = 0; i < str.length; i++) {
+                    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+                  }
+                  return Math.abs(hash) % avatarColors.length;
+                };
                 const colorIdx = getColorIndex(emp.name);
 
                 return (
                   <tr key={emp.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="px-5 py-4">
+                     {/* ... nội dung row giữ nguyên ... */}
+                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
                         <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${avatarColors[colorIdx]} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
                           {emp.avatar}
@@ -314,7 +358,8 @@ export default function EmployeeList() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-4">
+                    {/* ... các cột khác giữ nguyên ... */}
+                     <td className="px-4 py-4">
                       <span className="text-slate-700 text-sm font-medium">{emp.department}</span>
                       <p className="text-slate-400 text-xs">{emp.position}</p>
                     </td>
@@ -339,26 +384,15 @@ export default function EmployeeList() {
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex items-center justify-center gap-1">
-                        <button
-                          onClick={() => setSelectedEmp(emp)}
-                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Xem chi tiết"
-                        >
+                        <button onClick={() => setSelectedEmp(emp)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Xem chi tiết">
                           <Eye size={15} />
                         </button>
-                        
-                        {/* Nút EDIT */}
-                        <button 
-                          onClick={() => openEditModal(emp)}
-                          className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" 
-                          title="Chỉnh sửa"
-                        >
+                        <button onClick={() => openEditModal(emp)} className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title="Chỉnh sửa">
                           <Edit2 size={15} />
                         </button>
-
-                        <button className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Xóa">
+                        {/* <button className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Xóa">
                           <Trash2 size={15} />
-                        </button>
+                        </button> */}
                       </div>
                     </td>
                   </tr>
@@ -368,21 +402,64 @@ export default function EmployeeList() {
           </table>
         </div>
 
-
         {!loading && filtered.length === 0 && (
           <div className="text-center py-12 text-slate-400">
             <Filter size={40} className="mx-auto mb-3 opacity-30" />
             <p className="text-sm">Không tìm thấy nhân viên phù hợp</p>
           </div>
         )}
-        <div className="px-5 py-3.5 border-t border-slate-100 flex items-center justify-between">
-          <p className="text-xs text-slate-400">Hiển thị {filtered.length}/{(employees || []).length} nhân viên</p>
-          <div className="flex gap-1">
-            {[1, 2, 3].map((p) => (
-              <button key={p} className={`w-7 h-7 rounded-lg text-xs font-medium ${p === 1 ? "bg-emerald-500 text-white" : "text-slate-500 hover:bg-slate-100"}`}>{p}</button>
-            ))}
+
+        {/* FOOTER PHÂN TRANG ĐỘNG */}
+        {filtered.length > 0 && (
+          <div className="px-5 py-3.5 border-t border-slate-100 flex items-center justify-between">
+            <p className="text-xs text-slate-400">
+              Hiển thị {startIndex + 1}-{Math.min(endIndex, filtered.length)} của {filtered.length} nhân viên
+            </p>
+            
+            <div className="flex gap-1">
+              {/* Nút Previous */}
+              <button 
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-medium transition-colors ${
+                  currentPage === 1 
+                    ? "text-slate-300 cursor-not-allowed" 
+                    : "text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                &lt;
+              </button>
+
+              {/* Danh sách số trang */}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => handlePageChange(page)}
+                  className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors ${
+                    page === currentPage
+                      ? "bg-emerald-500 text-white shadow-md shadow-emerald-200"
+                      : "text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+
+              {/* Nút Next */}
+              <button 
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-medium transition-colors ${
+                  currentPage === totalPages 
+                    ? "text-slate-300 cursor-not-allowed" 
+                    : "text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                &gt;
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {selectedEmp && <EmployeeModal employee={selectedEmp} onClose={() => setSelectedEmp(null)} />}
