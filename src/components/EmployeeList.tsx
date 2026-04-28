@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Search, Plus, Filter, Edit2, Trash2, Eye, Phone, Mail, ChevronDown } from "lucide-react";
-import { employees, Employee } from "../data/mockData";
+import { Employee } from "../data/mockData";
+import { useEmployees } from "../hooks/useAPI";
 
 const statusLabel: Record<string, { label: string; color: string }> = {
   active: { label: "Đang làm việc", color: "bg-emerald-100 text-emerald-700" },
@@ -85,9 +86,11 @@ export default function EmployeeList() {
   const [selectedEmp, setSelectedEmp] = useState<Employee | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  const departments = ["all", ...Array.from(new Set(employees.map((e) => e.department)))];
+  const { employees, loading, error } = useEmployees();
 
-  const filtered = employees.filter((e) => {
+  const departments = ["all", ...Array.from(new Set((employees || []).map((e: Employee) => e.department)))];
+
+  const filtered = (employees || []).filter((e: Employee) => {
     const matchSearch = e.name.toLowerCase().includes(search.toLowerCase()) ||
       e.id.toLowerCase().includes(search.toLowerCase()) ||
       e.position.toLowerCase().includes(search.toLowerCase());
@@ -170,7 +173,17 @@ export default function EmployeeList() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filtered.map((emp) => {
+              {loading && (
+                <tr>
+                  <td colSpan={7} className="text-center py-12 text-slate-400">Đang tải dữ liệu...</td>
+                </tr>
+              )}
+              {error && (
+                <tr>
+                  <td colSpan={7} className="text-center py-12 text-red-500">Lỗi: {error}</td>
+                </tr>
+              )}
+              {!loading && !error && filtered.map((emp: Employee) => {
                 const colorIdx = parseInt(emp.id.slice(-1)) % 8;
                 return (
                   <tr key={emp.id} className="hover:bg-slate-50/70 transition-colors">
@@ -231,14 +244,14 @@ export default function EmployeeList() {
             </tbody>
           </table>
         </div>
-        {filtered.length === 0 && (
+        {!loading && filtered.length === 0 && (
           <div className="text-center py-12 text-slate-400">
             <Filter size={40} className="mx-auto mb-3 opacity-30" />
             <p className="text-sm">Không tìm thấy nhân viên phù hợp</p>
           </div>
         )}
         <div className="px-5 py-3.5 border-t border-slate-100 flex items-center justify-between">
-          <p className="text-xs text-slate-400">Hiển thị {filtered.length}/{employees.length} nhân viên</p>
+          <p className="text-xs text-slate-400">Hiển thị {filtered.length}/{(employees || []).length} nhân viên</p>
           <div className="flex gap-1">
             {[1, 2, 3].map((p) => (
               <button key={p} className={`w-7 h-7 rounded-lg text-xs font-medium ${p === 1 ? "bg-emerald-500 text-white" : "text-slate-500 hover:bg-slate-100"}`}>{p}</button>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Clock, CheckCircle2, XCircle, AlertCircle, Home, Calendar, ChevronDown } from "lucide-react";
-import { attendanceRecords, employees } from "../data/mockData";
+import { useAttendances, useEmployees } from "../hooks/useAPI";
 
 const statusConfig: Record<string, { label: string; color: string; icon: any; bg: string }> = {
   present: { label: "Có mặt", color: "text-emerald-700", icon: CheckCircle2, bg: "bg-emerald-100" },
@@ -24,20 +24,23 @@ const avatarColors = [
 export default function Attendance() {
   const [selectedEmp, setSelectedEmp] = useState("all");
 
+  const { attendances, loading, error } = useAttendances();
+  const { employees } = useEmployees();
+
   const today = new Date().toISOString().split("T")[0];
 
-  const todayRecords = attendanceRecords.filter((a) => a.date === today);
-  const presentCount = todayRecords.filter((a) => a.status === "present").length;
-  const lateCount = todayRecords.filter((a) => a.status === "late").length;
-  const absentCount = todayRecords.filter((a) => a.status === "absent").length;
-  const remoteCount = todayRecords.filter((a) => a.status === "remote").length;
+  const todayRecords = (attendances || []).filter((a: any) => a.date === today);
+  const presentCount = todayRecords.filter((a: any) => a.status === "present").length;
+  const lateCount = todayRecords.filter((a: any) => a.status === "late").length;
+  const absentCount = todayRecords.filter((a: any) => a.status === "absent").length;
+  const remoteCount = todayRecords.filter((a: any) => a.status === "remote").length;
 
-  const filtered = attendanceRecords.filter(
-    (a) => selectedEmp === "all" || a.employeeId === selectedEmp
+  const filtered = (attendances || []).filter(
+    (a: any) => selectedEmp === "all" || a.employeeId === selectedEmp
   );
 
-  const groupedByDate: Record<string, typeof attendanceRecords> = {};
-  filtered.forEach((a) => {
+  const groupedByDate: Record<string, any[]> = {};
+  filtered.forEach((a: any) => {
     if (!groupedByDate[a.date]) groupedByDate[a.date] = [];
     groupedByDate[a.date].push(a);
   });
@@ -88,7 +91,7 @@ export default function Attendance() {
             className="appearance-none pl-3 pr-8 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-300 cursor-pointer"
           >
             <option value="all">Tất cả nhân viên</option>
-            {employees.map((emp) => (
+            {(employees || []).map((emp: any) => (
               <option key={emp.id} value={emp.id}>{emp.name}</option>
             ))}
           </select>
@@ -98,8 +101,14 @@ export default function Attendance() {
       </div>
 
       {/* Attendance records by date */}
-      <div className="space-y-4">
-        {sortedDates.map((date) => {
+        <div className="space-y-4">
+        {loading && (
+          <div className="text-center py-8 text-slate-400">Đang tải chấm công...</div>
+        )}
+        {error && (
+          <div className="text-center py-8 text-red-500">Lỗi: {error}</div>
+        )}
+        {!loading && sortedDates.map((date) => {
           const records = groupedByDate[date];
           const isToday = date === today;
           return (

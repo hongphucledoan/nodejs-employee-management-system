@@ -1,3 +1,4 @@
+import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -12,20 +13,20 @@ import {
 } from "lucide-react";
 
 interface SidebarProps {
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
+  onNavigate?: () => void;
 }
 
 const navItems = [
-  { id: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
-  { id: "employees", label: "Nhân viên", icon: Users },
-  { id: "tasks", label: "Công việc", icon: ClipboardList },
-  { id: "attendance", label: "Chấm công", icon: Clock },
-  { id: "salary", label: "Lương thưởng", icon: DollarSign },
-  { id: "reports", label: "Báo cáo", icon: BarChart3 },
+  { id: "dashboard", label: "Tổng quan", icon: LayoutDashboard, path: "/dashboard" },
+  { id: "employees", label: "Nhân viên", icon: Users, path: "/employees" },
+  { id: "tasks", label: "Công việc", icon: ClipboardList, path: "/tasks" },
+  { id: "attendance", label: "Chấm công", icon: Clock, path: "/attendance" },
+  { id: "salary", label: "Lương thưởng", icon: DollarSign, path: "/salary" },
+  { id: "reports", label: "Báo cáo", icon: BarChart3, path: "/reports" },
 ];
 
-export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
+export default function Sidebar({ onNavigate }: SidebarProps) {
+  const location = useLocation();
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 shadow-2xl z-50">
       {/* Logo */}
@@ -46,11 +47,12 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
         </p>
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = activeTab === item.id;
+          const isActive = location.pathname === item.path || (item.path === "/dashboard" && location.pathname === "/");
           return (
-            <button
+            <Link
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              to={item.path}
+              onClick={onNavigate}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group ${
                 isActive
                   ? "bg-gradient-to-r from-green-500/20 to-emerald-500/10 text-green-400 border border-green-500/30"
@@ -60,7 +62,7 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
               <Icon size={18} className={isActive ? "text-green-400" : "text-slate-500 group-hover:text-white"} />
               <span className="flex-1 text-left">{item.label}</span>
               {isActive && <ChevronRight size={14} className="text-green-400" />}
-            </button>
+            </Link>
           );
         })}
       </nav>

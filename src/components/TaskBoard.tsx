@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Plus, Clock, AlertTriangle, ChevronDown, Search, Flag } from "lucide-react";
-import { tasks, employees, Task } from "../data/mockData";
+// import { Task } from "../data/mockData";
+import { useTasks, useEmployees } from "../hooks/useAPI";
 
 const priorityConfig: Record<string, { label: string; color: string; dot: string }> = {
   urgent: { label: "Khẩn cấp", color: "bg-red-100 text-red-700 border-red-200", dot: "bg-red-500" },
@@ -27,8 +28,8 @@ const avatarColors = [
   "from-lime-500 to-green-600",
 ];
 
-function TaskCard({ task }: { task: Task }) {
-  const emp = employees.find((e) => e.id === task.employeeId);
+function TaskCard({ task, employees }: { task: Task; employees?: any[] }) {
+  const emp = (employees || []).find((e) => e.id === task.employeeId);
   const colorIdx = parseInt(task.employeeId.slice(-1)) % 8;
   const priority = priorityConfig[task.priority];
   const isOverdue = new Date(task.deadline) < new Date() && task.status !== "done";
@@ -88,7 +89,10 @@ export default function TaskBoard() {
   const [search, setSearch] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("all");
 
-  const filtered = tasks.filter((t) => {
+  const { tasks, loading: tasksLoading, error: tasksError } = useTasks();
+  const { employees } = useEmployees();
+
+  const filtered = (tasks || []).filter((t: Task) => {
     const matchSearch = t.title.toLowerCase().includes(search.toLowerCase()) ||
       t.project.toLowerCase().includes(search.toLowerCase());
     const matchPriority = priorityFilter === "all" || t.priority === priorityFilter;
@@ -177,9 +181,12 @@ export default function TaskBoard() {
                   </span>
                 </div>
                 <div className="space-y-3">
-                  {colTasks.map((task) => (
-                    <TaskCard key={task.id} task={task} />
-                  ))}
+                  {tasksLoading && (
+                    <div className="text-center py-8 text-slate-400">Đang tải...</div>
+                  )}
+                  {!tasksLoading && colTasks.map((task) => (
+                        <TaskCard key={task.id} task={task} employees={employees} />
+                      ))}
                 </div>
                 {colTasks.length === 0 && (
                   <div className="text-center py-8 text-slate-300 text-xs">Không có task</div>

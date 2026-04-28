@@ -26,7 +26,11 @@ app.get("/api/employees", async (req, res) => {
     });
     res.json(employees);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch employees" });
+    console.error("❌ Error fetching employees:", error);
+    res.status(500).json({ 
+      error: "Failed to fetch employees",
+      details: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -94,7 +98,11 @@ app.get("/api/tasks", async (req, res) => {
     });
     res.json(tasks);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch tasks" });
+    console.error("❌ Error fetching tasks:", error);
+    res.status(500).json({ 
+      error: "Failed to fetch tasks",
+      details: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -159,7 +167,11 @@ app.get("/api/attendances", async (req, res) => {
     });
     res.json(attendances);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch attendances" });
+    console.error("❌ Error fetching attendances:", error);
+    res.status(500).json({ 
+      error: "Failed to fetch attendances",
+      details: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 
@@ -212,7 +224,11 @@ app.get("/api/salaries", async (req, res) => {
     });
     res.json(salaries);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch salaries" });
+    console.error("❌ Error fetching salaries:", error);
+    res.status(500).json({ 
+      error: "Failed to fetch salaries",
+      details: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 });
 

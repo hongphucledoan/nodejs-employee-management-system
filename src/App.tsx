@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Routes, Route, useLocation } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./components/Dashboard";
 import EmployeeList from "./components/EmployeeList";
@@ -8,35 +9,28 @@ import Salary from "./components/Salary";
 import Reports from "./components/Reports";
 import { Bell, Menu } from "lucide-react";
 
+const tabTitles: Record<string, string> = {
+  dashboard: "Tổng quan",
+  employees: "Quản lý nhân viên",
+  tasks: "Theo dõi công việc",
+  attendance: "Chấm công",
+  salary: "Lương thưởng",
+  reports: "Báo cáo",
+};
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case "dashboard": return <Dashboard />;
-      case "employees": return <EmployeeList />;
-      case "tasks": return <TaskBoard />;
-      case "attendance": return <Attendance />;
-      case "salary": return <Salary />;
-      case "reports": return <Reports />;
-      default: return <Dashboard />;
-    }
-  };
-
-  const tabTitles: Record<string, string> = {
-    dashboard: "Tổng quan",
-    employees: "Quản lý nhân viên",
-    tasks: "Theo dõi công việc",
-    attendance: "Chấm công",
-    salary: "Lương thưởng",
-    reports: "Báo cáo",
+  const getPageTitle = () => {
+    const path = location.pathname.replace("/", "") || "dashboard";
+    return tabTitles[path] || "Tổng quan";
   };
 
   return (
     <div className="min-h-screen bg-slate-50 font-[Inter,sans-serif]">
       {/* Sidebar */}
-      <Sidebar activeTab={activeTab} setActiveTab={(tab) => { setActiveTab(tab); setSidebarOpen(false); }} />
+      <Sidebar onNavigate={() => setSidebarOpen(false)} />
 
       {/* Mobile overlay */}
       {sidebarOpen && (
@@ -48,7 +42,7 @@ export default function App() {
 
       {/* Mobile sidebar */}
       <div className={`fixed left-0 top-0 h-screen w-64 z-50 lg:hidden transition-transform duration-300 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
-        <Sidebar activeTab={activeTab} setActiveTab={(tab) => { setActiveTab(tab); setSidebarOpen(false); }} />
+        <Sidebar onNavigate={() => setSidebarOpen(false)} />
       </div>
 
       {/* Main content */}
@@ -66,7 +60,7 @@ export default function App() {
             <div className="flex items-center gap-2 text-sm text-slate-400">
               <span className="text-slate-600 font-semibold">NodeJS Corp</span>
               <span>/</span>
-              <span>{tabTitles[activeTab]}</span>
+              <span>{getPageTitle()}</span>
             </div>
           </div>
 
@@ -92,7 +86,15 @@ export default function App() {
 
         {/* Page content */}
         <main className="flex-1 p-4 sm:p-6">
-          {renderContent()}
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/employees" element={<EmployeeList />} />
+            <Route path="/tasks" element={<TaskBoard />} />
+            <Route path="/attendance" element={<Attendance />} />
+            <Route path="/salary" element={<Salary />} />
+            <Route path="/reports" element={<Reports />} />
+          </Routes>
         </main>
 
         {/* Footer */}
