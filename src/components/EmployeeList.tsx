@@ -94,23 +94,15 @@ export default function EmployeeList() {
   const [search, setSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  
+  // State cho View Detail
   const [selectedEmp, setSelectedEmp] = useState<Employee | null>(null);
-  const [showAddModal, setShowAddModal] = useState(false);
 
-  const { employees, loading, error } = useEmployees();
-
-  const departments = ["all", ...Array.from(new Set((employees || []).map((e: Employee) => e.department)))];
-
-  const filtered = (employees || []).filter((e: Employee) => {
-    const matchSearch = e.name.toLowerCase().includes(search.toLowerCase()) ||
-      e.empId.toLowerCase().includes(search.toLowerCase()) ||
-      e.position.toLowerCase().includes(search.toLowerCase());
-    const matchDept = deptFilter === "all" || e.department === deptFilter;
-    const matchStatus = statusFilter === "all" || e.status === statusFilter;
-    return matchSearch && matchDept && matchStatus;
-  });
-
-  // Thêm state mới vào đầu component EmployeeList
+  // State cho Modal Add/Edit
+  const [showFormModal, setShowFormModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false); // Phân biệt Thêm hay Sửa
+  const [currentEditId, setCurrentEditId] = useState<string | null>(null); // Lưu ID khi sửa
+  
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -122,11 +114,29 @@ export default function EmployeeList() {
     status: "active",
   });
 
-  const [adding, setAdding] = useState(false);
-  const [addError, setAddError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
 
-  // Reset form khi mở modal
+  const { employees, loading, error } = useEmployees();
+
+  // ... (Giữ nguyên các logic filter departments, filtered list ở dưới) ...
+  const departments = ["all", ...Array.from(new Set((employees || []).map((e: Employee) => e.department)))];
+  const filtered = (employees || []).filter((e: Employee) => {
+     // ... (giữ nguyên logic filter) ...
+    const matchSearch = e.name.toLowerCase().includes(search.toLowerCase()) ||
+      e.id.toLowerCase().includes(search.toLowerCase()) ||
+      e.position.toLowerCase().includes(search.toLowerCase());
+    const matchDept = deptFilter === "all" || e.department === deptFilter;
+    const matchStatus = statusFilter === "all" || e.status === statusFilter;
+    return matchSearch && matchDept && matchStatus;
+  });
+
+  // --- HANDLERS ---
+
+  // Mở modal THÊM mới
   const openAddModal = () => {
+    setIsEditing(false);
+    setCurrentEditId(null);
     setFormData({
       name: "",
       email: "",
@@ -137,41 +147,73 @@ export default function EmployeeList() {
       level: "Junior",
       status: "active",
     });
-    setAddError("");
-    setShowAddModal(true);
+    setFormError("");
+    setShowFormModal(true);
   };
 
-  // Handle submit
-  const handleAddEmployee = async () => {
+  // Mở modal CHỈNH SỬA
+  const openEditModal = (emp: Employee) => {
+    // Hỏi xác nhận trước khi mở form (theo yêu cầu)
+    if (window.confirm("Bạn có thực sự muốn chỉnh sửa dữ liệu nhân viên cũ?")) {
+      setIsEditing(true);
+      setCurrentEditId(emp.id); // Lưu lại ID của nhân viên cần sửa
+      setFormData({
+        name: emp.name,
+        email: emp.email,
+        phone: emp.phone,
+        department: emp.department,
+        position: emp.position,
+        salary: emp.salary,
+        level: emp.level,
+        status: emp.status,
+      });
+      setFormError("");
+      setShowFormModal(true);
+    }
+  };
+
+  // Xử lý Submit (Cho cả Add và Edit)
+  const handleSubmit = async () => {
     if (!formData.name || !formData.email || !formData.phone || !formData.position) {
-      setAddError("Vui lòng điền đầy đủ thông tin bắt buộc");
+      setFormError("Vui lòng điền đầy đủ thông tin bắt buộc");
       return;
     }
 
-    setAdding(true);
-    setAddError("");
+    setSubmitting(true);
+    setFormError("");
 
     try {
-      const response = await fetch("http://localhost:3001/api/employees", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
+      let response;
+      
+      if (isEditing && currentEditId) {
+        // Gọi API Update
+        response = await fetch(`http://localhost:3001/api/employees/${currentEditId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        });
+      } else {
+        // Gọi API Create
+        response = await fetch("http://localhost:3001/api/employees", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        });
+      }
 
       const result = await response.json();
 
       if (response.ok) {
-        alert("Thêm nhân viên thành công!");
-        setShowAddModal(false);
-        // Refresh danh sách (nếu useEmployees dùng React Query hoặc refetch)
-        window.location.reload(); // tạm thời, sau này nên dùng refetch tốt hơn
+        alert(isEditing ? "Cập nhật thông tin thành công!" : "Thêm nhân viên thành công!");
+        setShowFormModal(false);
+        window.location.reload(); // Reload trang theo yêu cầu
       } else {
-        setAddError(result.error || "Có lỗi xảy ra khi thêm nhân viên");
+        setFormError(result.error || "Có lỗi xảy ra");
       }
     } catch (err) {
-      setAddError("Lỗi kết nối đến server. Vui lòng thử lại.");
+      setFormError("Lỗi kết nối đến server. Vui lòng thử lại.");
     } finally {
-      setAdding(false);
+      setSubmitting(false);
     }
   };
 
@@ -182,10 +224,10 @@ export default function EmployeeList() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">Quản lý nhân viên</h2>
-          <p className="text-slate-500 text-sm mt-1">Tổng cộng {employees.length} nhân viên trong hệ thống</p>
+          <p className="text-slate-500 text-sm mt-1">Tổng cộng {employees?.length || 0} nhân viên trong hệ thống</p>
         </div>
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={openAddModal}
           className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm hover:opacity-90 transition-opacity shadow-lg shadow-emerald-200"
         >
           <Plus size={16} />
@@ -251,27 +293,24 @@ export default function EmployeeList() {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {loading && (
-                <tr>
-                  <td colSpan={7} className="text-center py-12 text-slate-400">Đang tải dữ liệu...</td>
-                </tr>
+                <tr><td colSpan={7} className="text-center py-12 text-slate-400">Đang tải dữ liệu...</td></tr>
               )}
               {error && (
-                <tr>
-                  <td colSpan={7} className="text-center py-12 text-red-500">Lỗi: {error}</td>
-                </tr>
+                <tr><td colSpan={7} className="text-center py-12 text-red-500">Lỗi: {error}</td></tr>
               )}
               {!loading && !error && filtered.map((emp: Employee) => {
-                // const colorIdx = parseInt(emp.id.slice(-1)) % 8;
+                const colorIdx = getColorIndex(emp.name);
+
                 return (
                   <tr key={emp.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${avatarColors[getColorIndex(emp.name)]} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${avatarColors[colorIdx]} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
                           {emp.avatar}
                         </div>
                         <div>
                           <p className="text-slate-800 text-sm font-semibold">{emp.name}</p>
-                          <p className="text-slate-400 text-xs">{emp.id} · {emp.email}</p>
+                          <p className="text-slate-400 text-xs">{emp.empId || emp.id} · {emp.email}</p>
                         </div>
                       </div>
                     </td>
@@ -307,9 +346,16 @@ export default function EmployeeList() {
                         >
                           <Eye size={15} />
                         </button>
-                        <button className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title="Chỉnh sửa">
+                        
+                        {/* Nút EDIT */}
+                        <button 
+                          onClick={() => openEditModal(emp)}
+                          className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" 
+                          title="Chỉnh sửa"
+                        >
                           <Edit2 size={15} />
                         </button>
+
                         <button className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Xóa">
                           <Trash2 size={15} />
                         </button>
@@ -321,6 +367,8 @@ export default function EmployeeList() {
             </tbody>
           </table>
         </div>
+
+
         {!loading && filtered.length === 0 && (
           <div className="text-center py-12 text-slate-400">
             <Filter size={40} className="mx-auto mb-3 opacity-30" />
@@ -339,13 +387,15 @@ export default function EmployeeList() {
 
       {selectedEmp && <EmployeeModal employee={selectedEmp} onClose={() => setSelectedEmp(null)} />}
       
-      {/* Add Employee Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowAddModal(false)}>
+      {/* Modal Form (Dùng chung cho Thêm và Sửa) */}
+      {showFormModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowFormModal(false)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-bold text-slate-800">Thêm nhân viên mới</h3>
-              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-700 text-xl font-bold">✕</button>
+              <h3 className="text-lg font-bold text-slate-800">
+                {isEditing ? "Chỉnh sửa nhân viên" : "Thêm nhân viên mới"}
+              </h3>
+              <button onClick={() => setShowFormModal(false)} className="text-slate-400 hover:text-slate-700 text-xl font-bold">✕</button>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -429,7 +479,7 @@ export default function EmployeeList() {
                   value={formData.salary}
                   onChange={(e) => setFormData({ ...formData, salary: parseInt(e.target.value) || 5000000 })}
                   min={5000000}
-                  max={30000000}
+                  max={100000000}
                   step={500000}
                   className="w-full px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-300"
                 />
@@ -449,22 +499,22 @@ export default function EmployeeList() {
               </div>
             </div>
 
-            {addError && <p className="text-red-500 text-sm mt-3">{addError}</p>}
+            {formError && <p className="text-red-500 text-sm mt-3">{formError}</p>}
 
             <div className="flex gap-3 mt-6">
               <button 
-                onClick={() => setShowAddModal(false)} 
+                onClick={() => setShowFormModal(false)} 
                 className="flex-1 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition"
-                disabled={adding}
+                disabled={submitting}
               >
                 Hủy
               </button>
               <button 
-                onClick={handleAddEmployee} 
-                disabled={adding}
+                onClick={handleSubmit} 
+                disabled={submitting}
                 className="flex-1 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl hover:opacity-90 transition disabled:opacity-70"
               >
-                {adding ? "Đang thêm..." : "Thêm nhân viên"}
+                {submitting ? "Đang xử lý..." : (isEditing ? "Lưu thay đổi" : "Thêm nhân viên")}
               </button>
             </div>
           </div>
