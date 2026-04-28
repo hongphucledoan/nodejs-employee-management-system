@@ -21,7 +21,8 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { employees, tasks, attendanceRecords, salaryRecords, departmentStats, monthlyRevenue } from "../data/mockData";
+import { useEmployees, useTasks, useAttendances, useSalaries } from "../hooks/useAPI";
+import { useState, useMemo } from "react";
 
 function StatCard({
   title,
@@ -63,16 +64,48 @@ function StatCard({
 }
 
 export default function Dashboard() {
-  const activeEmployees = employees.filter((e) => e.status === "active").length;
-  const completedTasks = tasks.filter((t) => t.status === "done").length;
-  const inProgressTasks = tasks.filter((t) => t.status === "in-progress").length;
+  const { employees = [], loading: empLoading, error: empError } = useEmployees();
+  const { tasks = [], loading: taskLoading, error: taskError } = useTasks();
+  const { attendances = [], loading: attLoading } = useAttendances();
+  const { salaries = [], loading: salLoading } = useSalaries();
+
+  // Mock data cho biểu đồ doanh thu (có thể thay bằng API sau)
+  const monthlyRevenue = [
+    { month: "T1", revenue: 450, expense: 300 },
+    { month: "T2", revenue: 520, expense: 340 },
+    { month: "T3", revenue: 480, expense: 380 },
+    { month: "T4", revenue: 650, expense: 420 },
+    { month: "T5", revenue: 720, expense: 450 },
+    { month: "T6", revenue: 800, expense: 480 },
+  ];
+
+  // Tính departmentStats từ employees
+  const departmentStats = useMemo(() => {
+    const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"];
+    const depts: Record<string, number> = {};
+    
+    (employees || []).forEach((emp) => {
+      depts[emp.department] = (depts[emp.department] || 0) + 1;
+    });
+
+    return Object.entries(depts).map(([name, count], index) => ({
+      name,
+      employees: count,
+      color: colors[index % colors.length],
+    }));
+  }, [employees]);
+
+  const activeEmployees = (employees || []).filter((e) => e.status === "active").length;
+  const completedTasks = (tasks || []).filter((t) => t.status === "done").length;
+  const inProgressTasks = (tasks || []).filter((t) => t.status === "in-progress").length;
   const today = new Date().toISOString().split("T")[0];
-  const todayAttendance = attendanceRecords.filter((a) => a.date === today && a.status === "present").length;
-  const totalPayroll = salaryRecords
+  const todayAttendance = (attendances || []).filter((a) => a.date === today && a.status === "present").length;
+  const totalPayroll = (salaries || [])
     .filter((s) => s.month === "2025-07")
     .reduce((sum, s) => sum + s.netSalary, 0);
 
-  const recentTasks = tasks.slice(0, 5);
+  const recentTasks = (tasks || []).slice(0, 5);
+  const isLoading = empLoading || taskLoading || attLoading || salLoading;
 
   return (
     <div className="space-y-6">
@@ -84,11 +117,20 @@ export default function Dashboard() {
         </p>
       </div>
 
+      {/* Error messages */}
+      {(empError || taskError) && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+          <p className="text-red-700 text-sm">
+            <span className="font-semibold">Lỗi:</span> {empError || taskError}
+          </p>
+        </div>
+      )}
+
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Tổng nhân viên"
-          value={employees.length.toString()}
+          value={isLoading ? "..." : employees.length.toString()}
           subtitle={`${activeEmployees} đang hoạt động`}
           icon={Users}
           color="bg-gradient-to-br from-blue-500 to-indigo-600"
@@ -97,7 +139,7 @@ export default function Dashboard() {
         />
         <StatCard
           title="Công việc hoàn thành"
-          value={`${completedTasks}/${tasks.length}`}
+          value={isLoading ? "..." : `${completedTasks}/${tasks.length}`}
           subtitle={`${inProgressTasks} đang thực hiện`}
           icon={CheckCircle2}
           color="bg-gradient-to-br from-emerald-500 to-teal-600"
@@ -106,8 +148,8 @@ export default function Dashboard() {
         />
         <StatCard
           title="Chấm công hôm nay"
-          value={`${todayAttendance}`}
-          subtitle={`/${employees.filter((e) => e.status === "active").length} nhân viên`}
+          value={isLoading ? "..." : `${todayAttendance}`}
+          subtitle={`/${activeEmployees} nhân viên`}
           icon={Clock}
           color="bg-gradient-to-br from-violet-500 to-purple-600"
           trend="up"
@@ -115,7 +157,7 @@ export default function Dashboard() {
         />
         <StatCard
           title="Quỹ lương T7/2025"
-          value={`${(totalPayroll / 1000000).toFixed(0)}M`}
+          value={isLoading ? "..." : `${(totalPayroll / 1000000).toFixed(0)}M`}
           subtitle="VNĐ (chưa thanh toán)"
           icon={DollarSign}
           color="bg-gradient-to-br from-amber-500 to-orange-600"
@@ -143,55 +185,67 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={monthlyRevenue}>
-              <defs>
-                <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-              <Tooltip
-                contentStyle={{ background: "#1e293b", border: "none", borderRadius: "10px", color: "#fff", fontSize: "12px" }}
-              />
-              <Area type="monotone" dataKey="revenue" name="Doanh thu" stroke="#10b981" strokeWidth={2} fill="url(#colorRevenue)" />
-              <Area type="monotone" dataKey="expense" name="Chi phí" stroke="#f43f5e" strokeWidth={2} fill="url(#colorExpense)" />
-            </AreaChart>
-          </ResponsiveContainer>
+          {isLoading ? (
+            <div className="text-center py-12 text-slate-400">Đang tải...</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart data={monthlyRevenue}>
+                <defs>
+                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ background: "#1e293b", border: "none", borderRadius: "10px", color: "#fff", fontSize: "12px" }}
+                />
+                <Area type="monotone" dataKey="revenue" name="Doanh thu" stroke="#10b981" strokeWidth={2} fill="url(#colorRevenue)" />
+                <Area type="monotone" dataKey="expense" name="Chi phí" stroke="#f43f5e" strokeWidth={2} fill="url(#colorExpense)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
         {/* Department Pie */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
           <h3 className="font-semibold text-slate-800 mb-1">Cơ cấu phòng ban</h3>
           <p className="text-slate-400 text-xs mb-3">Phân bổ nhân sự</p>
-          <ResponsiveContainer width="100%" height={180}>
-            <PieChart>
-              <Pie data={departmentStats} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="employees">
-                {departmentStats.map((entry, index) => (
-                  <Cell key={index} fill={entry.color} />
+          {isLoading ? (
+            <div className="text-center py-12 text-slate-400">Đang tải...</div>
+          ) : departmentStats.length === 0 ? (
+            <div className="text-center py-12 text-slate-400">Không có dữ liệu</div>
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={180}>
+                <PieChart>
+                  <Pie data={departmentStats} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="employees">
+                    {departmentStats.map((entry, index) => (
+                      <Cell key={index} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ background: "#1e293b", border: "none", borderRadius: "10px", color: "#fff", fontSize: "12px" }} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="space-y-2 mt-2">
+                {departmentStats.map((dept) => (
+                  <div key={dept.name} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: dept.color }}></div>
+                      <span className="text-slate-600 text-xs">{dept.name}</span>
+                    </div>
+                    <span className="text-slate-800 text-xs font-semibold">{dept.employees} người</span>
+                  </div>
                 ))}
-              </Pie>
-              <Tooltip contentStyle={{ background: "#1e293b", border: "none", borderRadius: "10px", color: "#fff", fontSize: "12px" }} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="space-y-2 mt-2">
-            {departmentStats.map((dept) => (
-              <div key={dept.name} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: dept.color }}></div>
-                  <span className="text-slate-600 text-xs">{dept.name}</span>
-                </div>
-                <span className="text-slate-800 text-xs font-semibold">{dept.employees} người</span>
               </div>
-            ))}
-          </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -202,50 +256,56 @@ export default function Dashboard() {
             <h3 className="font-semibold text-slate-800">Công việc gần đây</h3>
             <span className="text-xs text-indigo-600 font-medium cursor-pointer hover:underline">Xem tất cả</span>
           </div>
-          <div className="space-y-3">
-            {recentTasks.map((task) => {
-              const emp = employees.find((e) => e.id === task.employeeId);
-              const priorityColor: Record<string, string> = {
-                urgent: "bg-red-100 text-red-700",
-                high: "bg-orange-100 text-orange-700",
-                medium: "bg-yellow-100 text-yellow-700",
-                low: "bg-slate-100 text-slate-600",
-              };
-              const statusColor: Record<string, string> = {
-                done: "text-emerald-600",
-                "in-progress": "text-blue-600",
-                review: "text-violet-600",
-                todo: "text-slate-400",
-              };
-              return (
-                <div key={task.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                    {emp?.avatar.slice(0, 2)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-slate-700 text-sm font-medium truncate">{task.title}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${priorityColor[task.priority]}`}>
-                        {task.priority === "urgent" ? "Khẩn" : task.priority === "high" ? "Cao" : task.priority === "medium" ? "TB" : "Thấp"}
-                      </span>
-                      <span className={`text-xs font-medium ${statusColor[task.status]}`}>
-                        {task.status === "done" ? "Hoàn thành" : task.status === "in-progress" ? "Đang làm" : task.status === "review" ? "Review" : "Chờ"}
-                      </span>
+          {isLoading ? (
+            <div className="text-center py-8 text-slate-400">Đang tải...</div>
+          ) : recentTasks.length === 0 ? (
+            <div className="text-center py-8 text-slate-400">Không có công việc nào</div>
+          ) : (
+            <div className="space-y-3">
+              {recentTasks.map((task) => {
+                const emp = (employees || []).find((e) => e.id === task.employeeId);
+                const priorityColor: Record<string, string> = {
+                  urgent: "bg-red-100 text-red-700",
+                  high: "bg-orange-100 text-orange-700",
+                  medium: "bg-yellow-100 text-yellow-700",
+                  low: "bg-slate-100 text-slate-600",
+                };
+                const statusColor: Record<string, string> = {
+                  done: "text-emerald-600",
+                  "in-progress": "text-blue-600",
+                  review: "text-violet-600",
+                  todo: "text-slate-400",
+                };
+                return (
+                  <div key={task.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                      {emp?.avatar.slice(0, 2) || "?"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-slate-700 text-sm font-medium truncate">{task.title}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${priorityColor[task.priority]}`}>
+                          {task.priority === "urgent" ? "Khẩn" : task.priority === "high" ? "Cao" : task.priority === "medium" ? "TB" : "Thấp"}
+                        </span>
+                        <span className={`text-xs font-medium ${statusColor[task.status]}`}>
+                          {task.status === "done" ? "Hoàn thành" : task.status === "in-progress" ? "Đang làm" : task.status === "review" ? "Review" : "Chờ"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="text-xs text-slate-400">{task.progress}%</div>
+                      <div className="w-16 h-1.5 bg-slate-100 rounded-full mt-1">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500"
+                          style={{ width: `${task.progress}%` }}
+                        />
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <div className="text-xs text-slate-400">{task.progress}%</div>
-                    <div className="w-16 h-1.5 bg-slate-100 rounded-full mt-1">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500"
-                        style={{ width: `${task.progress}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Alerts */}
