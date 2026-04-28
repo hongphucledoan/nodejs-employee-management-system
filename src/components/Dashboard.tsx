@@ -24,6 +24,8 @@ import {
 import { useEmployees, useTasks, useAttendances, useSalaries } from "../hooks/useAPI";
 import { useState, useMemo } from "react";
 
+
+//Cấu hình cách trình bày cho thẻ thống kê
 function StatCard({
   title,
   value,
@@ -63,6 +65,8 @@ function StatCard({
   );
 }
 
+
+//Trang dashboard chính, hiển thị tổng quan hệ thống với các biểu đồ và thống kê quan trọng
 export default function Dashboard() {
   const { employees = [], loading: empLoading, error: empError } = useEmployees();
   const { tasks = [], loading: taskLoading, error: taskError } = useTasks();
@@ -78,6 +82,7 @@ export default function Dashboard() {
     { month: "T5", revenue: 720, expense: 450 },
     { month: "T6", revenue: 800, expense: 480 },
   ];
+
 
   // Tính departmentStats từ employees
   const departmentStats = useMemo(() => {
@@ -109,6 +114,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+  
       {/* Header */}
       <div>
         <h2 className="text-2xl font-bold text-slate-800">Tổng quan hệ thống</h2>
@@ -126,7 +132,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Stats */}
+      {/* 4 ô Thống kê */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Tổng nhân viên"
@@ -167,7 +173,7 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Revenue Chart */}
+        {/* Biểu đồ doanh thu & chi phí */}
         <div className="lg:col-span-2 bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -213,7 +219,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Department Pie */}
+        {/* Biểu đồ cơ cấu phòng ban */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
           <h3 className="font-semibold text-slate-800 mb-1">Cơ cấu phòng ban</h3>
           <p className="text-slate-400 text-xs mb-3">Phân bổ nhân sự</p>
@@ -243,14 +249,15 @@ export default function Dashboard() {
                     <span className="text-slate-800 text-xs font-semibold">{dept.employees} người</span>
                   </div>
                 ))}
-              </div>
-            </>
-          )}
+                </div>
+              </>
+            )}
+          </div>
         </div>
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Tasks */}
+        
+        {/* Công việc gần đây */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-slate-800">Công việc gần đây</h3>
@@ -308,7 +315,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Alerts */}
+        {/* Thông báo & cảnh báo */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
           <h3 className="font-semibold text-slate-800 mb-4">Thông báo & cảnh báo</h3>
           <div className="space-y-3">

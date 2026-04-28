@@ -101,6 +101,7 @@ export default function EmployeeList() {
 
   return (
     <div className="space-y-5">
+      
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -261,7 +262,8 @@ export default function EmployeeList() {
       </div>
 
       {selectedEmp && <EmployeeModal employee={selectedEmp} onClose={() => setSelectedEmp(null)} />}
-
+      
+      {/* Add Employee */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowAddModal(false)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6" onClick={(e) => e.stopPropagation()}>
