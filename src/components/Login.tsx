@@ -160,7 +160,7 @@ export default function Login({ onLogin }: LoginProps) {
             </div>
 
             {/* Confirm Password (Register only) */}
-            {showRegister && (
+            {/* {showRegister && (
               <div className="mb-6">
                 <label className="block text-sm font-medium text-slate-200 mb-2">
                   Xác nhận mật khẩu
@@ -174,7 +174,7 @@ export default function Login({ onLogin }: LoginProps) {
                   disabled={loading}
                 />
               </div>
-            )}
+            )} */}
 
             {/* Submit Button */}
             <button
@@ -192,7 +192,7 @@ export default function Login({ onLogin }: LoginProps) {
             {/* Toggle Register/Login */}
             <div className="text-center">
               <p className="text-slate-400 text-sm">
-                {showRegister ? "Đã có tài khoản? " : "Chưa có tài khoản? "}
+                {/* {showRegister ? "Đã có tài khoản? " : "Chưa có tài khoản? "} */}
                 <button
                   type="button"
                   onClick={() => {
@@ -206,7 +206,7 @@ export default function Login({ onLogin }: LoginProps) {
                   className="text-blue-400 hover:text-blue-300 font-semibold transition"
                   disabled={loading}
                 >
-                  {showRegister ? "Đăng nhập" : "Đăng ký"}
+                  {/* {showRegister ? "Đăng nhập" : "Đăng ký"} */}
                 </button>
               </p>
             </div>

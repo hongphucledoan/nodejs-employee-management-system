@@ -119,7 +119,7 @@ export default function App() {
           <div className="flex items-center gap-3">
             {/* Avatar */}
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:opacity-80 transition">
-              {location.pathname.includes("login") ? "?" : "AD"}
+              AD
             </div>
           </div>
         </header>
@@ -134,7 +134,7 @@ export default function App() {
             <Route path="/attendance" element={<ProtectedRoute element={<Attendance />} />} />
             <Route path="/salary" element={<ProtectedRoute element={<Salary />} />} />
             <Route path="/reports" element={<ProtectedRoute element={<Reports />} />} />
-            <Route path="/login" element={<Login onLogin={login} />} />
+            {/* <Route path="/login" element={<Login onLogin={login} />} /> */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </main>
