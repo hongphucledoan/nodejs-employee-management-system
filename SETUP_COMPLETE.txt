@@ -1,0 +1,134 @@
+📊 CẤU HÌNH HOÀN TẤT - DATABASE + PRISMA
+========================================
+
+✅ Đã Hoàn Thành:
+
+1. ✓ Cài đặt Prisma và MongoDB drivers
+2. ✓ Tạo Prisma Schema cho 4 models (Employee, Task, Attendance, SalaryRecord)
+3. ✓ Cấu hình .env cho MongoDB connection
+4. ✓ Tạo Backend Express Server (server.ts)
+5. ✓ Tạo Seed Script để migrate mock data
+6. ✓ Tạo API Routes (Employees, Tasks, Attendance, Salaries)
+7. ✓ Tạo Frontend API Service (src/services/api.ts)
+8. ✓ Tạo Custom React Hooks (src/hooks/useAPI.ts)
+9. ✓ Cập nhật package.json với scripts
+
+📁 CẤU TRÚC THÊM MỚI:
+
+server.ts                              # Express backend server
+prisma/
+├── schema.prisma                      # Prisma schema cho MongoDB
+└── seed.ts                            # Script migrate mock data
+src/
+├── services/
+│   └── api.ts                         # API client functions
+└── hooks/
+    └── useAPI.ts                      # Custom React hooks
+
+📄 TÀI LIỆU:
+├── SETUP_MONGODB.md                   # Hướng dẫn cấu hình MongoDB (Chi tiết)
+├── API_USAGE_EXAMPLES.md              # Ví dụ cách dùng API
+└── .env.example                       # Template cấu hình
+
+🔧 NPM SCRIPTS:
+
+Frontend:
+- npm run dev               # Chạy Vite dev server (port 5173)
+- npm run build             # Build production
+- npm run preview           # Preview build
+
+Backend:
+- npm run server            # Chạy Express server (port 3001)
+- npm run server:dev        # Chạy với auto-reload
+
+Database:
+- npm run seed              # Migrate mock data vào MongoDB
+- npm run prisma:studio     # Mở Prisma Studio GUI (port 5555)
+- npm run prisma:generate   # Generate Prisma client
+
+📡 API ENDPOINTS:
+
+GET    /api/employees                  # Lấy tất cả nhân viên
+POST   /api/employees                  # Tạo nhân viên mới
+GET    /api/employees/:id              # Chi tiết nhân viên
+PUT    /api/employees/:id              # Cập nhật nhân viên
+DELETE /api/employees/:id              # Xóa nhân viên
+
+GET    /api/tasks                      # Lấy tất cả công việc
+GET    /api/tasks/employee/:empId      # Công việc của nhân viên
+POST   /api/tasks                      # Tạo công việc
+PUT    /api/tasks/:id                  # Cập nhật công việc
+DELETE /api/tasks/:id                  # Xóa công việc
+
+GET    /api/attendances                # Lấy tất cả chấm công
+GET    /api/attendances/employee/:empId # Chấm công của nhân viên
+POST   /api/attendances                # Tạo bản ghi chấm công
+PUT    /api/attendances/:id            # Cập nhật chấm công
+
+GET    /api/salaries                   # Lấy tất cả bảng lương
+GET    /api/salaries/employee/:empId   # Lương của nhân viên
+POST   /api/salaries                   # Tạo bảng lương
+PUT    /api/salaries/:id               # Cập nhật bảng lương
+
+🎯 CÁCH CHẠY PROJECT:
+
+1. Khởi tạo MongoDB:
+   - Tải từ: https://www.mongodb.com/try/download/community
+   - Hoặc dùng MongoDB Atlas (Cloud): https://www.mongodb.com/cloud/atlas
+
+2. Cấu hình .env:
+   - Sao chép .env.example hoặc dùng DATABASE_URL sẵn có
+   - Nếu dùng local: DATABASE_URL="mongodb://localhost:27017/employee_management"
+
+3. Migrate dữ liệu:
+   npm run seed
+
+4. Chạy Backend (Terminal 1):
+   npm run server:dev
+
+5. Chạy Frontend (Terminal 2):
+   npm run dev
+
+6. Mở trình duyệt:
+   http://localhost:5173
+
+💡 TIPS:
+
+- Dùng Prisma Studio để quản lý database GUI:
+  npm run prisma:studio
+
+- Xem API trong browser:
+  http://localhost:3001/api/employees
+
+- Kiểm tra server health:
+  http://localhost:3001/health
+
+📝 TIẾP THEO - CÁCH DÙNG API TRONG COMPONENT:
+
+Thay vì dùng mockData, giờ dùng hooks:
+
+```typescript
+import { useEmployees } from '../hooks/useAPI';
+
+function MyComponent() {
+  const { employees, loading, error, refresh } = useEmployees();
+  
+  if (loading) return <div>Đang tải...</div>;
+  if (error) return <div>Lỗi: {error}</div>;
+  
+  return (
+    <div>
+      {employees.map(emp => (
+        <div key={emp.id}>{emp.name}</div>
+      ))}
+    </div>
+  );
+}
+```
+
+🚀 PROJECT READY!
+
+Bây giờ dữ liệu của bạn được lưu trong MongoDB!
+Tất cả dữ liệu sẽ persist và có thể dùng lại sau khi restart server.
+
+Cần giúp? Xem file SETUP_MONGODB.md để troubleshooting

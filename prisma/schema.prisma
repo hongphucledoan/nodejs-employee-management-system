@@ -1,0 +1,89 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// Employee Model
+model Employee {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  empId     String   @unique // EMP001, EMP002, etc.
+  name      String
+  avatar    String
+  department String
+  position  String
+  email     String   @unique
+  phone     String
+  joinDate  String   // ISO date format: YYYY-MM-DD
+  status    String   @default("active") // active, inactive, probation
+  salary    Int
+  level     String   // Junior, Mid, Senior, Lead, Manager
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  tasks     Task[]
+  attendances Attendance[]
+  salaries  SalaryRecord[]
+}
+
+// Task Model
+model Task {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  taskId    String   @unique // TASK001, TASK002, etc.
+  title     String
+  employeeId String  @db.ObjectId
+  priority  String   // low, medium, high, urgent
+  status    String   // todo, in-progress, review, done
+  deadline  String   // ISO date format: YYYY-MM-DD
+  progress  Int      // 0-100
+  description String
+  project   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  employee  Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+// Attendance Model
+model Attendance {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  attId     String   @unique // A001, A002, etc.
+  employeeId String  @db.ObjectId
+  date      String   // ISO date format: YYYY-MM-DD
+  checkIn   String   // HH:mm format
+  checkOut  String   // HH:mm format
+  status    String   // present, absent, late, leave, remote
+  workHours Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  employee  Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+// SalaryRecord Model
+model SalaryRecord {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  salId     String   @unique // SAL001, SAL002, etc.
+  employeeId String  @db.ObjectId
+  month     String   // YYYY-MM format
+  baseSalary Int
+  bonus     Int
+  deduction Int
+  tax       Int
+  netSalary Int
+  status    String   @default("pending") // paid, pending, processing
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  employee  Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
