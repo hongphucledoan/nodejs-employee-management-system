@@ -196,17 +196,17 @@ app.get("/api/employees/:id", async (req, res) => {
 //   }
 // });
 
-// Delete employee
-app.delete("/api/employees/:id", async (req, res) => {
-  try {
-    await prisma.employee.delete({
-      where: { id: req.params.id },
-    });
-    res.json({ message: "Employee deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to delete employee" });
-  }
-});
+// // Delete employee
+// app.delete("/api/employees/:id", async (req, res) => {
+//   try {
+//     await prisma.employee.delete({
+//       where: { id: req.params.id },
+//     });
+//     res.json({ message: "Employee deleted successfully" });
+//   } catch (error) {
+//     res.status(500).json({ error: "Failed to delete employee" });
+//   }
+// });
 
 // Create employee - with better error handling
 app.post("/api/employees", async (req, res) => {
@@ -414,18 +414,18 @@ app.get("/api/tasks/employee/:employeeId", async (req, res) => {
   }
 });
 
-// Create task
-app.post("/api/tasks", async (req, res) => {
-  try {
-    const task = await prisma.task.create({
-      data: req.body,
-      include: { employee: true },
-    });
-    res.json(task);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to create task" });
-  }
-});
+// // Create task
+// app.post("/api/tasks", async (req, res) => {
+//   try {
+//     const task = await prisma.task.create({
+//       data: req.body,
+//       include: { employee: true },
+//     });
+//     res.json(task);
+//   } catch (error) {
+//     res.status(500).json({ error: "Failed to create task" });
+//   }
+// });
 
 // Update task
 app.put("/api/tasks/:id", async (req, res) => {
@@ -452,6 +452,113 @@ app.delete("/api/tasks/:id", async (req, res) => {
     res.status(500).json({ error: "Failed to delete task" });
   }
 });
+
+// ============ CREATE TASK ROUTE ============
+app.post("/api/tasks", async (req, res) => {
+  try {
+    const { title, employeeId, priority, status, deadline, progress, description, project } = req.body;
+
+    // 1. Validate cơ bản
+    if (!title || !employeeId || !deadline || !project) {
+      return res.status(400).json({ error: "Thiếu thông tin bắt buộc (Title, Employee, Deadline, Project)" });
+    }
+
+    // 2. Sinh taskId tự động (TASK001, TASK002...)
+    const lastTask = await prisma.task.findFirst({
+      orderBy: { taskId: "desc" },
+      select: { taskId: true },
+    });
+
+    let nextNum = 1;
+    if (lastTask?.taskId?.startsWith("TASK")) {
+      const numPart = lastTask.taskId.slice(4);
+      if (!isNaN(parseInt(numPart))) {
+        nextNum = parseInt(numPart) + 1;
+      }
+    }
+    const newTaskId = `TASK${nextNum.toString().padStart(3, "0")}`;
+
+    // 3. Tạo task mới
+    const task = await prisma.task.create({
+      data: {
+        taskId: newTaskId,
+        title: title.trim(),
+        employeeId, // MongoDB ObjectId của nhân viên
+        priority: priority || "medium",
+        status: status || "todo",
+        deadline, // String format YYYY-MM-DD
+        progress: parseInt(progress) || 0,
+        description: description ? description.trim() : "",
+        project: project.trim(),
+      },
+      include: { employee: true }, // Trả về kèm thông tin nhân viên để frontend hiển thị ngay
+    });
+
+    console.log(`✅ Task created: ${newTaskId} - ${title}`);
+
+    return res.status(201).json({
+      success: true,
+      message: "Thêm công việc thành công",
+      task,
+    });
+
+  } catch (error: any) {
+    console.error("❌ Error creating task:", error);
+    return res.status(500).json({
+      error: "Không thể thêm công việc",
+      details: error.message
+    });
+  }
+});
+
+// ============ UPDATE TASK ROUTE ============
+app.put("/api/tasks/:id", async (req, res) => {
+  try {
+    const { id } = req.params; // MongoDB ObjectId
+    const { title, employeeId, priority, status, deadline, progress, description, project } = req.body;
+
+    // 1. Kiểm tra tồn tại
+    const existingTask = await prisma.task.findUnique({
+      where: { id },
+    });
+
+    if (!existingTask) {
+      return res.status(404).json({ error: "Không tìm thấy công việc" });
+    }
+
+    // 2. Cập nhật dữ liệu
+    const updatedTask = await prisma.task.update({
+      where: { id }, 
+      data: {
+        title: title?.trim(),
+        employeeId,
+        priority,
+        status,
+        deadline,
+        progress: parseInt(progress),
+        description: description?.trim(),
+        project: project?.trim(),
+      },
+      include: { employee: true },
+    });
+
+    console.log(`✅ Task updated: ${id}`);
+
+    return res.json({
+      success: true,
+      message: "Cập nhật công việc thành công",
+      task: updatedTask,
+    });
+
+  } catch (error: any) {
+    console.error("❌ Error updating task:", error);
+    return res.status(500).json({
+      error: "Lỗi server khi cập nhật công việc",
+      details: error.message
+    });
+  }
+});
+
 
 // ============ ATTENDANCE ROUTES ============
 // Get all attendances

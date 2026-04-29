@@ -334,14 +334,6 @@ export default function EmployeeList() {
               
               {/* SỬA: Dùng paginatedData thay vì filtered */}
               {!loading && !error && paginatedData.map((emp: Employee) => {
-                 // ... giữ nguyên logic màu avatar và render row ...
-                 const getColorIndex = (str: string) => {
-                  let hash = 0;
-                  for (let i = 0; i < str.length; i++) {
-                    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-                  }
-                  return Math.abs(hash) % avatarColors.length;
-                };
                 const colorIdx = getColorIndex(emp.name);
 
                 return (
