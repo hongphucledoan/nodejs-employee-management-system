@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Search, Plus, Filter, Edit2, Trash2, Eye, Phone, Mail, ChevronDown } from "lucide-react";
 import { Employee } from "../data/Dataset";
 import { useEmployees } from "../hooks/useAPI";
+import { avatarColors, getColorIndex } from "../utils/colors";
 
 const statusLabel: Record<string, { label: string; color: string }> = {
   active: { label: "Đang làm việc", color: "bg-emerald-100 text-emerald-700" },
@@ -17,25 +18,7 @@ const levelColor: Record<string, string> = {
   Manager: "bg-emerald-100 text-emerald-700",
 };
 
-const avatarColors = [
-  "from-blue-500 to-indigo-600",
-  "from-violet-500 to-purple-600",
-  "from-rose-500 to-pink-600",
-  "from-amber-500 to-orange-600",
-  "from-emerald-500 to-teal-600",
-  "from-cyan-500 to-blue-600",
-  "from-fuchsia-500 to-pink-600",
-  "from-lime-500 to-green-600",
-];
 
-// Hàm tạo chỉ số màu dựa trên tên (để màu không đổi khi reload)
-const getColorIndex = (str: string) => {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return Math.abs(hash) % avatarColors.length;
-};
 
 // Employee Detail Modal Props
 interface ModalProps {
@@ -252,7 +235,7 @@ export default function EmployeeList() {
         </div>
         <button
           onClick={openAddModal}
-          className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm hover:opacity-90 transition-opacity shadow-lg shadow-emerald-200"
+          className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm cursor-pointer hover:opacity-90 transition-opacity shadow-lg shadow-emerald-200"
         >
           <Plus size={16} />
           Thêm nhân viên
@@ -573,7 +556,7 @@ export default function EmployeeList() {
             <div className="flex gap-3 mt-6">
               <button 
                 onClick={() => setShowFormModal(false)} 
-                className="flex-1 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition"
+                className="flex-1 py-2.5 text-sm font-medium text-slate-600 bg-slate-100 rounded-xl cursor-pointer hover:bg-slate-200 transition"
                 disabled={submitting}
               >
                 Hủy
@@ -581,7 +564,7 @@ export default function EmployeeList() {
               <button 
                 onClick={handleSubmit} 
                 disabled={submitting}
-                className="flex-1 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl hover:opacity-90 transition disabled:opacity-70"
+                className="flex-1 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl cursor-pointer hover:opacity-90 transition disabled:opacity-70"
               >
                 {submitting ? "Đang xử lý..." : (isEditing ? "Lưu thay đổi" : "Thêm nhân viên")}
               </button>

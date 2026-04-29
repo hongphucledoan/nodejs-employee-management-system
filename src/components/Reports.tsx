@@ -23,6 +23,7 @@ import {
   PolarRadiusAxis,
 } from "recharts";
 import { employees, tasks, departmentStats } from "../data/Dataset";
+import { avatarColors, getColorIndex } from "../utils/colors";
 
 const performanceData = [
   { subject: "Hoàn thành task", A: 85, fullMark: 100 },
@@ -206,20 +207,10 @@ export default function Reports() {
               const empTasks = tasks.filter((t) => t.employeeId === emp.id);
               const done = empTasks.filter((t) => t.status === "done").length;
               const rate = empTasks.length ? Math.round((done / empTasks.length) * 100) : 0;
-              const colorIdx = parseInt(emp.id.slice(-1)) % 8;
-              const colors = [
-                "from-blue-500 to-indigo-600",
-                "from-violet-500 to-purple-600",
-                "from-rose-500 to-pink-600",
-                "from-amber-500 to-orange-600",
-                "from-emerald-500 to-teal-600",
-                "from-cyan-500 to-blue-600",
-                "from-fuchsia-500 to-pink-600",
-                "from-lime-500 to-green-600",
-              ];
+              const colorIdx = getColorIndex(emp.name);
               return (
                 <div key={emp.id} className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${colors[colorIdx]} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+                  <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${avatarColors[colorIdx]} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
                     {emp.avatar.slice(0, 2)}
                   </div>
                   <div className="flex-1 min-w-0">

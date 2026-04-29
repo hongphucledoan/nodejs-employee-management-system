@@ -3,6 +3,7 @@ import { Plus, Clock, AlertTriangle, ChevronDown, Search, Flag, X, Edit2 } from 
 // import { Task } from "../data/Dataset";
 import { useTasks, useEmployees } from "../hooks/useAPI";
 
+
 const priorityConfig: Record<string, { label: string; color: string; dot: string }> = {
   urgent: { label: "Khẩn cấp", color: "bg-red-100 text-red-700 border-red-200", dot: "bg-red-500" },
   high: { label: "Cao", color: "bg-orange-100 text-orange-700 border-orange-200", dot: "bg-orange-500" },
@@ -17,16 +18,7 @@ const columns = [
   { id: "done", label: "Hoàn thành", color: "bg-emerald-500", light: "bg-emerald-50 border-emerald-200" },
 ];
 
-const avatarColors = [
-  "from-blue-500 to-indigo-600",
-  "from-violet-500 to-purple-600",
-  "from-rose-500 to-pink-600",
-  "from-amber-500 to-orange-600",
-  "from-emerald-500 to-teal-600",
-  "from-cyan-500 to-blue-600",
-  "from-fuchsia-500 to-pink-600",
-  "from-lime-500 to-green-600",
-];
+import { avatarColors, getColorIndex } from "../utils/colors";
 
 // --- INTERFACE ---
 interface Task {
@@ -492,14 +484,7 @@ function TaskCard({ task, employees, onEdit }: { task: Task; employees?: any[]; 
   const emp = (employees || []).find((e) => e.id === task.employeeId);
   
   // Xử lý màu avatar an toàn hơn
-  const getColorIdx = (str: string) => {
-     let hash = 0;
-     for (let i = 0; i < str.length; i++) {
-       hash = str.charCodeAt(i) + ((hash << 5) - hash);
-     }
-     return Math.abs(hash) % avatarColors.length;
-  };
-  const colorIdx = emp ? getColorIdx(emp.name) : 0; 
+  const colorIdx = emp ? getColorIndex(emp.name) : 0; 
 
   const priority = priorityConfig[task.priority];
   const isOverdue = new Date(task.deadline) < new Date() && task.status !== "done";
@@ -611,7 +596,7 @@ export default function TaskBoard() {
           </div>
           <button 
             onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-violet-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm hover:opacity-90 transition shadow-lg shadow-indigo-200"
+            className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-violet-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm cursor-pointer hover:opacity-90 transition shadow-lg shadow-indigo-200"
           >
             <Plus size={16} />
             Thêm task
@@ -713,14 +698,7 @@ export default function TaskBoard() {
                 const isOverdue = new Date(task.deadline) < new Date() && task.status !== "done";
                 
                 // Hàm lấy màu avatar cho list
-                const getColorIdx = (str: string) => {
-                   let hash = 0;
-                   for (let i = 0; i < str.length; i++) {
-                     hash = str.charCodeAt(i) + ((hash << 5) - hash);
-                   }
-                   return Math.abs(hash) % avatarColors.length;
-                };
-                const colorIdx = emp ? getColorIdx(emp.name) : 0;
+                const colorIdx = emp ? getColorIndex(emp.name) : 0;
 
                 return (
                   <tr key={task.id} className="hover:bg-slate-50/70 transition-colors">

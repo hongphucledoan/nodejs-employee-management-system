@@ -11,16 +11,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const avatarColors = [
-  "from-blue-500 to-indigo-600",
-  "from-violet-500 to-purple-600",
-  "from-rose-500 to-pink-600",
-  "from-amber-500 to-orange-600",
-  "from-emerald-500 to-teal-600",
-  "from-cyan-500 to-blue-600",
-  "from-fuchsia-500 to-pink-600",
-  "from-lime-500 to-green-600",
-];
+import { avatarColors, getColorIndex } from "../utils/colors";
 
 const statusConfig = {
   paid: { label: "Đã thanh toán", color: "bg-emerald-100 text-emerald-700", icon: CheckCircle2 },
@@ -146,7 +137,7 @@ export default function Salary() {
             <tbody className="divide-y divide-slate-50">
               {currentRecords.map((rec) => {
                 const emp = employees.find((e) => e.id === rec.employeeId);
-                const colorIdx = parseInt(rec.employeeId.slice(-1)) % 8;
+                const colorIdx = emp ? getColorIndex(emp.name) : 0;
                 const status = statusConfig[rec.status];
                 const StatusIcon = status.icon;
                 return (

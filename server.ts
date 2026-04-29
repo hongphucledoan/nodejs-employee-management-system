@@ -593,13 +593,68 @@ app.get("/api/attendances/employee/:employeeId", async (req, res) => {
 // Create attendance
 app.post("/api/attendances", async (req, res) => {
   try {
+    const { employeeId, date, checkIn, checkOut, status } = req.body;
+
+    if (!employeeId || !date || !checkIn || !status) {
+      return res.status(400).json({ error: "Thiếu thông tin bắt buộc" });
+    }
+
+    // Check duplicate
+    const existing = await prisma.attendance.findFirst({
+      where: {
+        employeeId,
+        date,
+      },
+    });
+
+    if (existing) {
+      return res.status(409).json({ error: "Nhân viên này đã được chấm công trong ngày này" });
+    }
+
+    // Generate attId
+    const lastAtt = await prisma.attendance.findFirst({
+      orderBy: { attId: "desc" },
+      select: { attId: true },
+    });
+
+    let nextNum = 1;
+    if (lastAtt?.attId?.startsWith("A")) {
+      const numPart = lastAtt.attId.slice(1);
+      if (!isNaN(parseInt(numPart))) {
+        nextNum = parseInt(numPart) + 1;
+      }
+    }
+    const newAttId = `A${nextNum.toString().padStart(3, "0")}`;
+
+    // Calculate workHours
+    let workHours = 0;
+    if (checkOut) {
+      const [inH, inM] = checkIn.split(':').map(Number);
+      const [outH, outM] = checkOut.split(':').map(Number);
+      const diff = (outH + outM / 60) - (inH + inM / 60);
+      workHours = diff > 0 ? parseFloat(diff.toFixed(2)) : 0;
+    }
+
     const attendance = await prisma.attendance.create({
-      data: req.body,
+      data: {
+        attId: newAttId,
+        employeeId,
+        date,
+        checkIn,
+        checkOut: checkOut || "",
+        status,
+        workHours,
+      },
       include: { employee: true },
     });
-    res.json(attendance);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to create attendance" });
+
+    res.status(201).json(attendance);
+  } catch (error: any) {
+    console.error("❌ Error creating attendance:", error);
+    res.status(500).json({ 
+      error: "Không thể thêm chấm công",
+      details: error.message
+    });
   }
 });
 
