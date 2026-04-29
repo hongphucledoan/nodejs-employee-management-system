@@ -705,13 +705,61 @@ app.get("/api/salaries/employee/:employeeId", async (req, res) => {
 // Create salary record
 app.post("/api/salaries", async (req, res) => {
   try {
+    const { employeeId, month, baseSalary, bonus, deduction, tax, status } = req.body;
+
+    if (!employeeId || !month) {
+      return res.status(400).json({ error: "Thiếu thông tin bắt buộc" });
+    }
+
+    const existing = await prisma.salaryRecord.findFirst({
+      where: {
+        employeeId,
+        month,
+      },
+    });
+
+    if (existing) {
+      return res.status(409).json({ error: "Nhân viên này đã có bảng lương trong tháng này" });
+    }
+
+    const lastSal = await prisma.salaryRecord.findFirst({
+      orderBy: { salId: "desc" },
+      select: { salId: true },
+    });
+
+    let nextNum = 1;
+    if (lastSal?.salId?.startsWith("SAL")) {
+      const numPart = lastSal.salId.slice(3);
+      if (!isNaN(parseInt(numPart))) {
+        nextNum = parseInt(numPart) + 1;
+      }
+    }
+    const newSalId = `SAL${nextNum.toString().padStart(3, "0")}`;
+
+    const base = parseInt(baseSalary) || 0;
+    const bns = parseInt(bonus) || 0;
+    const ded = parseInt(deduction) || 0;
+    const tx = parseInt(tax) || 0;
+    const net = base + bns - ded - tx;
+
     const salary = await prisma.salaryRecord.create({
-      data: req.body,
+      data: {
+        salId: newSalId,
+        employeeId,
+        month,
+        baseSalary: base,
+        bonus: bns,
+        deduction: ded,
+        tax: tx,
+        netSalary: net,
+        status: status || "pending",
+      },
       include: { employee: true },
     });
-    res.json(salary);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to create salary record" });
+    res.status(201).json(salary);
+  } catch (error: any) {
+    console.error("❌ Error creating salary:", error);
+    res.status(500).json({ error: "Failed to create salary record", details: error.message });
   }
 });
 

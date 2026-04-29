@@ -23,7 +23,7 @@ const navItems = [
   { id: "tasks", label: "Công việc", icon: ClipboardList, path: "/tasks" },
   { id: "attendance", label: "Chấm công", icon: Clock, path: "/attendance" },
   { id: "salary", label: "Lương thưởng", icon: DollarSign, path: "/salary" },
-  { id: "reports", label: "Báo cáo", icon: BarChart3, path: "/reports" },
+  // { id: "reports", label: "Báo cáo", icon: BarChart3, path: "/reports" },
 ];
 
 export default function Sidebar({ onNavigate }: SidebarProps) {
