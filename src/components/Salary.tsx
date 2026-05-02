@@ -112,7 +112,12 @@ function PaySalaryModal({ isOpen, onClose, onRefresh, salaryRecord }: PaySalaryM
         }
       });
 
-      lateDeduction = Math.round(lateDays * baseSalary * 0.01);
+      if (lateDays > 2) {
+        lateDeduction = baseSalary;
+      } else {
+        lateDeduction = Math.round(lateDays * baseSalary * 0.01);
+      }
+
     } catch (err) {
       console.error("Lỗi khi lấy dữ liệu chấm công:", err);
     }
